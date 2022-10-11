@@ -343,7 +343,11 @@ class Simulation(Simulation_base):
             J = self.jacobianMatrix(endEffector)
             target_step = step_pos[i,:]
             delta_step = targetPosition - target_step
-            
+
+            delta_theta = np.matmul(np.linalg.pinv(J),delta_step)
+
+            new_theta = new_theta + delta_theta
+    
 
 
 
