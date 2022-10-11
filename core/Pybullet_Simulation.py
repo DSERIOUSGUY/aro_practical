@@ -281,9 +281,29 @@ class Simulation(Simulation_base):
         # your kinematic chain.
         #return np.array()
 
+        pos = 0
+        orient = 0
+        ai = 0
+        col = []
 
+        joint_class = ""
 
-        pass
+        end_pos, orient = self.JointLocationAndOrientation(endEffector)
+
+        for i in self.getTransformationMatrices.keys():
+
+            name = i.split("_")
+            joint_class = name[0]
+            if(endEffector.find(joint_class)!= -1):
+                print("considering:",i)
+                pos,orient = self.getJointLocationAndOrientation(i)
+                ai = self.jointRotationAxis[i]
+
+                col.append(np.cross(ai,np.array() - pos))
+
+        return np.matrix(col)
+
+            
 
     # Task 1.2 Inverse Kinematics
 
@@ -303,6 +323,65 @@ class Simulation(Simulation_base):
         # TODO add your code here
         # Hint: return a numpy array which includes the reference angular
         # positions for all joints after performing inverse kinematics.
+
+        #inits
+        target_step = None
+        delta_step = None
+
+        initPosition,initOrientation = self.getJointLocationAndOrientation(endEffector)
+
+        step_pos = np.linspace(initPosition,targetPosition,interpolationSteps)
+        
+        #need to get matrix of thetas for reaching the final position
+
+        for i in range(interpolationSteps):
+
+            #setting max limit
+            if(i >= maxIterPerStep):
+                break
+
+            J = self.jacobianMatrix(endEffector)
+            target_step = step_pos[i,:]
+            delta_step = targetPosition - target_step
+            
+
+
+
+
+
+
+        #  for i in range(IK_steps):
+        
+        # # obtain the Jacobian, use the current joint configurations and E-F position
+        # ### START CODE HERE
+        # J = geomJacobian(joint2pos, joint3pos, endEffectorPos)
+        # ### END CODE HERE
+        
+        # # compute the dy steps
+        # newgoal = step_positions[i, :]
+        # deltaStep = newgoal - endEffectorPos
+        
+        # # define the dy
+        # subtarget = np.array([deltaStep[0], deltaStep[1], 0]) 
+
+        # # compute dq from dy and pseudo-Jacobian
+        # ### START CODE HERE
+        # radTheta = np.matmul(np.linalg.pinv(J),subtarget)
+        # ### END CODE HERE
+        
+        # # update the robot configuration
+        # ### START CODE HERE
+        # newTheta = newTheta + radTheta
+        # ### END CODE HERE
+        
+
+        # # ----------- Do forward kinematics to plot the arm ---------------
+        # # Do forward kinematics for a set angle on each joint
+        # T = arm.forwardKinematics(newTheta[0],newTheta[1],newTheta[2])
+
+        # # Find the x,y coordinates of joints 2, 3 and end effector so they can be plotted
+        # joint2pos, joint3pos, endEffectorPos = arm.findJointPos()
+
         pass
 
     def move_without_PD(self, endEffector, targetPosition, speed=0.01, orientation=None,
