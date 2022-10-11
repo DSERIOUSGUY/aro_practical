@@ -74,6 +74,7 @@ class Simulation(Simulation_base):
         'LHAND'      : np.array([0, 0, 0]) # optional
     }
 
+
     def getJointRotationalMatrix(self, jointName=None, theta=None):
         """
             Returns the 3x3 rotation matrix for a joint from the axis-angle representation,
@@ -156,12 +157,12 @@ class Simulation(Simulation_base):
 
         for i in keys:
 
-            #initial position
-            if(i == "RARM_JOINT2") or (i == "LARM_JOINT2"):
-                theta = np.deg2rad(90)
-                #TODO: check what theta should be
-            else:
-                theta = np.deg2rad(0)
+            # #initial position
+            # if(i == "RARM_JOINT2") or (i == "LARM_JOINT2"):
+            #     theta = np.deg2rad(90)
+            #     #TODO: check what theta should be
+            # else:
+            #     theta = np.deg2rad(0)
 
             rmat = self.getJointRotationalMatrix(i,theta)
             
@@ -259,6 +260,17 @@ class Simulation(Simulation_base):
         """Get the orientation of a joint in the world frame, leave this unchanged please."""
         return np.array(self.getJointLocationAndOrientation(jointName)[1] @ self.jointRotationAxis[jointName]).squeeze()
 
+
+    # compute the geometric Jacobian  
+    # def geomJacobian(jnt2pos, jnt3pos, endEffPos,ai):
+    
+    #     endEffPos3d = np.pad(endEffPos,(0, 1), 'constant') #append a 0 on z
+    #     col0 = endEffPos3d
+    #     col1 = endEffPos3d - np.array(jnt2pos + [0])
+    #     col2 = endEffPos3d - np.array(jnt3pos + [0])
+    #     J = np.array([np.cross(ai,col0), np.cross(ai,col1), np.cross(ai,col2)]).T 
+    #     return J
+
     def jacobianMatrix(self, endEffector):
         """Calculate the Jacobian Matrix for the Nextage Robot."""
         # TODO modify from here
@@ -268,6 +280,9 @@ class Simulation(Simulation_base):
         # a 3xn or a 6xn Jacobian matrix, where 'n' is the number of joints in
         # your kinematic chain.
         #return np.array()
+
+
+
         pass
 
     # Task 1.2 Inverse Kinematics

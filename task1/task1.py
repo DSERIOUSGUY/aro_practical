@@ -64,11 +64,11 @@ sim = Simulation(pybulletConfigs, robotConfigs, refVect=ref)
 endEffector = "LARM_JOINT5"
 targetPosition = np.array([0.37, 0.23, 1.06385])  # x,y,z coordinates in world frame
 
-#test code
-tmats = sim.getTransformationMatrices()
-print(tmats["LARM_JOINT5"])
-print(sim.getJointLocationAndOrientation("LARM_JOINT5"))
-exit()
+# #test code
+# tmats = sim.getTransformationMatrices()
+# print(tmats["LARM_JOINT5"])
+# print(sim.getJointLocationAndOrientation("LARM_JOINT5"))
+# exit()
 
 # Example code. Feel free to modify
 pltTime, pltEFPosition = sim.move_without_PD(endEffector, targetPosition, speed=0.01, orientation=None, threshold=1e-3, maxIter=3000, debug=False, verbose=False)
