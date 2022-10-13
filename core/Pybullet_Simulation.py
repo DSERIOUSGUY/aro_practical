@@ -173,11 +173,11 @@ class Simulation(Simulation_base):
         Returns the position and rotation matrix of a given joint using Forward Kinematics
         according to the topology of the Nextage robot.
         @ param jointName name of the joint whose position to return
-        @ return pos, rotmat two numpy arrays, a 3x1 array for the position vector,
+        @ return pos, orient two numpy arrays, a 3x1 array for the position vector,
          and a 3x3 array for the rotation matrix
     """
-    def getJointLocationAndOrientation(self, jointName):
 
+    def getJointLocationAndOrientation(self, jointName):
 
         # multiply part of the segment by its predecessor only (predecessor will contain other roation mats)
         # alg :
@@ -214,7 +214,8 @@ class Simulation(Simulation_base):
                    np.array([tmats[jointName][0, 0:3],
                              tmats[jointName][1, 0:3],
                              tmats[jointName][2, 0:3]])
-        elif ((joint_class == 'LARM') or (joint_class == 'RARM') or (joint_class == 'HEAD')) and (type(joint_nr) == int) and (joint_nr == 0):
+        elif ((joint_class == 'LARM') or (joint_class == 'RARM') or (joint_class == 'HEAD')) and (
+                type(joint_nr) == int) and (joint_nr == 0):
             trans_mat = np.matmul(tmats['CHEST_JOINT0'], tmats[jointName])
             return np.array([trans_mat[0, 3], trans_mat[1, 3], trans_mat[2, 3]]), \
                    np.array([trans_mat[0, :3],
@@ -266,37 +267,43 @@ class Simulation(Simulation_base):
     #     J = np.array([np.cross(ai,col0), np.cross(ai,col1), np.cross(ai,col2)]).T 
     #     return J
 
+    """
+    Calculate the Jacobian Matrix for the Nextage Robot.
+    @param endEffector string id of the endEffector e.g. LARM_JOINT5
+    @return 3x15 Jacobian matrix
+    """
     def jacobianMatrix(self, endEffector):
-        """Calculate the Jacobian Matrix for the Nextage Robot."""
-        # TODO modify from here
-        # You can implement the cross product yourself or use calculateJacobian().
-        # Hint: you should return a numpy array for your Jacobian matrix. The
-        # size of the matrix will depend on your chosen convention. You can have
-        # a 3xn or a 6xn Jacobian matrix, where 'n' is the number of joints in
-        # your kinematic chain.
-        # return np.array()
 
-        pos = 0
+
+
+        pos = self.getJointPosition('CHEST_JOINT0')
         orient = 0
-        ai = 0
-        col = []
 
         joint_class = ""
 
-        end_pos, orient = self.JointLocationAndOrientation(endEffector)
-
-        for i in self.getTransformationMatrices.keys():
+        end_pos, orient = self.getJointLocationAndOrientation(endEffector)
+        col = np.array([np.cross(self.jointRotationAxis['CHEST_JOINT0'], end_pos - pos)])
+        tmats = self.getTransformationMatrices()
+        for i in tmats.keys():
 
             name = i.split("_")
             joint_class = name[0]
-            if (endEffector.find(joint_class) != -1):
+            if endEffector.find(joint_class) != -1:
                 print("considering:", i)
                 pos, orient = self.getJointLocationAndOrientation(i)
-                ai = self.jointRotationAxis[i]
 
-                col.append(np.cross(ai, np.array() - pos))
+                col = np.append(col, np.array([np.cross(self.jointRotationAxis[i], end_pos - pos)]), axis=0)
 
-        return np.matrix(col)
+            elif (joint_class == 'base') or (joint_class == 'CHEST') or (joint_class == 'RHAND') or (
+                    joint_class == 'LHAND'):
+
+                print("skipping:", i)
+                continue
+            else:
+                print("appending:", i)
+                col = np.append(col, np.zeros((1, 3)), axis=0)
+
+        return np.array(col.T)
 
     # Task 1.2 Inverse Kinematics
 
