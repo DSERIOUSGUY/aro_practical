@@ -11,7 +11,6 @@ import yaml
 from Pybullet_Simulation_base import Simulation_base
 
 
-# TODO: Rename class name after copying this file
 class Simulation(Simulation_base):
     """A Bullet simulation involving Nextage robot"""
 
@@ -179,7 +178,6 @@ class Simulation(Simulation_base):
     """
     def getJointLocationAndOrientation(self, jointName):
 
-        # return pos, rotmat
 
         # multiply part of the segment by its predecessor only (predecessor will contain other roation mats)
         # alg :
@@ -216,14 +214,12 @@ class Simulation(Simulation_base):
                    np.array([tmats[jointName][0, 0:3],
                              tmats[jointName][1, 0:3],
                              tmats[jointName][2, 0:3]])
-        elif ((joint_class == 'LARM') or (joint_class == 'RARM')) and (type(joint_nr) == int) and (joint_nr == 0):
+        elif ((joint_class == 'LARM') or (joint_class == 'RARM') or (joint_class == 'HEAD')) and (type(joint_nr) == int) and (joint_nr == 0):
             trans_mat = np.matmul(tmats['CHEST_JOINT0'], tmats[jointName])
-            return np.array([tmats[jointName][0, 3],
-                             tmats[jointName][1, 3],
-                             tmats[jointName][2, 3]]), \
-                   np.array([tmats[jointName][0, 0:3],
-                             tmats[jointName][1, 0:3],
-                             tmats[jointName][2, 0:3]])
+            return np.array([trans_mat[0, 3], trans_mat[1, 3], trans_mat[2, 3]]), \
+                   np.array([trans_mat[0, :3],
+                             trans_mat[1, :3],
+                             trans_mat[2, :3]])
         elif (type(joint_nr) == int) and (joint_nr > 0):
             prev_name = ""
             trans_mat = np.matmul(tmats['CHEST_JOINT0'], tmats[joint_class + "_JOINT0"])
@@ -238,9 +234,9 @@ class Simulation(Simulation_base):
                 # print("iter:",i,": ","*",prev_name)
 
             return np.array([trans_mat[0, 3], trans_mat[1, 3], trans_mat[2, 3]]), \
-                   np.array([trans_mat[0, :3].tolist()[0],
-                             trans_mat[1, :3].tolist()[0],
-                             trans_mat[2, :3].tolist()[0]])
+                   np.array([trans_mat[0, :3],
+                             trans_mat[1, :3],
+                             trans_mat[2, :3]])
         else:
             print("ERROR: didnt recognise joint number")
             return None, None
