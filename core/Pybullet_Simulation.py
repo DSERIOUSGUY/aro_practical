@@ -30,8 +30,7 @@ class Simulation(Simulation_base):
     jointRotationAxis = {
         'base_to_dummy': np.zeros(3),  # Virtual joint
         'base_to_waist': np.zeros(3),  # Fixed joint
-        # TODO: modify from here
-        # Rotation 
+        # Rotation matrices based on page 11-14 of the lab guide
         'CHEST_JOINT0': np.array([0, 0, 1]),
         'HEAD_JOINT0': np.array([0, 0, 1]),
         'HEAD_JOINT1': np.array([0, 1, 0]),
@@ -54,7 +53,7 @@ class Simulation(Simulation_base):
     frameTranslationFromParent = {
         'base_to_dummy': np.zeros(3),  # Virtual joint
         'base_to_waist': np.zeros(3),  # Fixed joint
-        # TODO: modify from here
+        # Translational matrices based on page 11-14 of the lab guide
         'CHEST_JOINT0': np.array([0, 0, 0.267]),
         'HEAD_JOINT0': np.array([0, 0, 0.302]),
         'HEAD_JOINT1': np.array([0, 0, 0.066]),
@@ -74,27 +73,24 @@ class Simulation(Simulation_base):
         'LHAND'      : np.array([0, 0, 0]) # optional
     }
 
-
+    """
+    Returns the 3x3 rotation matrix for a joint from the axis-angle representation,
+    where the axis is given by the revolution axis of the joint and the angle is theta.
+    @ param jointName codename for a joint e.g. CHEST_JOINT0
+    @ param theta angle of rotation of the joint
+    @ return a 3x3 rotational matrix as a numpy array
+    """
     def getJointRotationalMatrix(self, jointName=None, theta=None):
-        """
-            Returns the 3x3 rotation matrix for a joint from the axis-angle representation,
-            where the axis is given by the revolution axis of the joint and the angle is theta.
-        """
         if jointName == None:
             raise Exception("[getJointRotationalMatrix] \
                 Must provide a joint in order to compute the rotational matrix!")
-        # TODO modify from here
-        # Hint: the output should be a 3x3 rotational matrix as a numpy array
-        #return np.matrix()
         else:
-
             try:
                 axis = self.jointRotationAxis[jointName]
             except Exception as e:
                 print("ERROR:",e,"|",jointName)
 
-
-            #NOTE: ALL MATRICES ARE WRITTEN IN TRANSPOSE FROM WHAT IS GIVEN IN THE SLIDES
+            #NOTE: ALL MATRICES ARE WRITTEN IN TRANSPOSE FROM WHAT IS GIVEN IN THE SLIDE 25 of Coordinate_transforms.pdf
 
             # print("got axis:",axis)
 
@@ -166,7 +162,7 @@ class Simulation(Simulation_base):
 
             rmat = self.getJointRotationalMatrix(i,theta)
             
-            transformationMatrices[i] = np.matrix([
+            transformationMatrices[i] = np.array([
             self.append_to_array(rmat[0],self.frameTranslationFromParent[i][0]),
             self.append_to_array(rmat[1],self.frameTranslationFromParent[i][1]),
             self.append_to_array(rmat[2],self.frameTranslationFromParent[i][2]),
@@ -200,22 +196,34 @@ class Simulation(Simulation_base):
         #possible optimization, store rotation values, but need to be careful if it needs to be constantly updated
         #such as when in a trajectory
 
-        name = jointName.split("_")
 
-        #will only work for 1 digit joint numbers
+        name = jointName.split("_")
         joint_class = name[0]
-        joint_nr = int(name[-1][-1])
+        if joint_class == 'base':
+            joint_nr = name[-1]
+        elif (joint_class == 'RHAND') or ((joint_class == 'LHAND')):
+            joint_nr = name[0]
+        else:
+            joint_nr = int(name[-1][-1])  # only works for 1 digit codes
         tmats = self.getTransformationMatrices()
 
-
-        if(joint_nr == 0):
+        if (joint_nr == 'base'):
+            # TODO
+            pass
+        elif (joint_nr == 'RHAND'):
+            # TODO
+            pass
+        elif (joint_nr == 'LHAND'):
+            # TODO
+            pass
+        elif ((type(joint_nr) == int) and (joint_nr == 0)):
             return np.array([tmats[jointName][0,3],
                             tmats[jointName][1,3],
                             tmats[jointName][2,3]]),\
-                   np.matrix([tmats[jointName][0,0:3],
+                   np.array([tmats[jointName][0,0:3],
                             tmats[jointName][1,0:3],
                             tmats[jointName][2,0:3]])
-        elif(joint_nr>0):
+        elif ((type(joint_nr) == int) and (joint_nr > 0)):
             prev_name = ""
             trans_mat = 0
             for i in range(joint_nr,0,-1):
@@ -236,7 +244,7 @@ class Simulation(Simulation_base):
                 
 
             return np.array([trans_mat[0,3],trans_mat[1,3],trans_mat[2,3]]),\
-                   np.matrix([trans_mat[0,:3].tolist()[0],
+                   np.array([trans_mat[0,:3].tolist()[0],
                             trans_mat[1,:3].tolist()[0],
                             trans_mat[2,:3].tolist()[0]]) 
         else:
