@@ -20,6 +20,7 @@ class Simulation(Simulation_base):
         For the keyword arguments, please see in the Pybullet_Simulation_base.py
         """
         super().__init__(pybulletConfigs, robotConfigs)
+        self.p = self.pybulletConfigs["simulation"]
         if refVect:
             self.refVector = np.array(refVect)
         else:
@@ -73,6 +74,11 @@ class Simulation(Simulation_base):
         'LHAND': np.array([0, 0, 0])  # optional
     }
 
+    jointList = (
+        'CHEST_JOINT0', 'HEAD_JOINT0', 'HEAD_JOINT1', 'LARM_JOINT0', 'LARM_JOINT1', 'LARM_JOINT2', 'LARM_JOINT3',
+        'LARM_JOINT4', 'LARM_JOINT5', 'RARM_JOINT0', 'RARM_JOINT1', 'RARM_JOINT2', 'RARM_JOINT3', 'RARM_JOINT4',
+        'RARM_JOINT5')
+
     """
     Returns the 3x3 rotation matrix for a joint from the axis-angle representation,
     where the axis is given by the revolution axis of the joint and the angle is theta.
@@ -98,17 +104,17 @@ class Simulation(Simulation_base):
             # z-axis
             if np.array_equal(axis, np.array([0, 0, 1])):
                 return np.matrix([
-                    [math.cos(theta), math.sin(theta), 0],
-                    [-math.sin(theta), math.cos(theta), 0],
+                    [math.cos(theta), -math.sin(theta), 0],
+                    [math.sin(theta), math.cos(theta), 0],
                     [0, 0, 1]
                 ])
 
             # y-axis
             elif np.array_equal(axis, np.array([0, 1, 0])):
                 return np.matrix([
-                    [math.cos(theta), 0, -math.sin(theta)],
+                    [math.cos(theta), 0, math.sin(theta)],
                     [0, 1, 0],
-                    [math.sin(theta), 0, math.cos(theta)]
+                    [-math.sin(theta), 0, math.cos(theta)]
 
                 ])
 
@@ -116,8 +122,8 @@ class Simulation(Simulation_base):
             elif np.array_equal(axis, np.array([1, 0, 0])):
                 return np.matrix([
                     [1, 0, 0],
-                    [0, math.cos(theta), math.sin(theta)],
-                    [0, -math.sin(theta), math.cos(theta)]
+                    [0, math.cos(theta), -math.sin(theta)],
+                    [0, math.sin(theta), math.cos(theta)]
                 ])
 
             else:
@@ -292,7 +298,7 @@ class Simulation(Simulation_base):
             name = i.split("_")
             joint_class = name[0]
             if endEffector.find(joint_class) != -1:
-                print("considering:", i)
+                # print("considering:", i)
                 pos, orient = self.getJointLocationAndOrientation(i)
 
                 col = np.append(col, np.array([np.cross(self.jointRotationAxis[i], end_pos - pos)]), axis=0)
@@ -300,13 +306,86 @@ class Simulation(Simulation_base):
             elif (joint_class == 'base') or (joint_class == 'CHEST') or (joint_class == 'RHAND') or (
                     joint_class == 'LHAND'):
 
-                print("skipping:", i)
+                # print("skipping:", i)
                 continue
             else:
-                print("appending:", i)
+                # print("appending:", i)
                 col = np.append(col, np.zeros((1, 3)), axis=0)
 
         return np.array(col.T)
+
+    def efForwardKinematics(self, endEffector, q):
+
+        keys = self.jointRotationAxis.keys()
+        transformationMatrices = {}
+        for index, i in enumerate(self.jointList):
+            name = i.split("_")
+            joint_class = name[0]
+
+            theta = q[index]
+            # print('theta=', theta)
+            rmat = self.getJointRotationalMatrix(i, theta)
+            # print('rmat=', rmat)
+            transformationMatrices[i] = np.array([
+                self.append_to_array(rmat[0], self.frameTranslationFromParent[i][0]),
+                self.append_to_array(rmat[1], self.frameTranslationFromParent[i][1]),
+                self.append_to_array(rmat[2], self.frameTranslationFromParent[i][2]),
+                np.array([0, 0, 0, 1])
+            ])
+
+        name = endEffector.split("_")
+        joint_class = name[0]
+        if joint_class == 'base':
+            joint_nr = name[-1]
+        elif (joint_class == 'RHAND') or (joint_class == 'LHAND'):
+            joint_nr = name[0]
+        else:
+            joint_nr = int(name[-1][-1])  # only works for 1-digit codes
+        tmats = self.getTransformationMatrices()
+
+        if joint_nr == 'base':
+            # TODO
+            pass
+        elif joint_nr == 'RHAND':
+            # TODO
+            pass
+        elif joint_nr == 'LHAND':
+            # TODO
+            pass
+        elif (joint_class == 'CHEST') and (type(joint_nr) == int) and (joint_nr == 0):
+            return np.array([tmats[endEffector][0, 3],
+                             tmats[endEffector][1, 3],
+                             tmats[endEffector][2, 3]]), \
+                   np.array([tmats[endEffector][0, 0:3],
+                             tmats[endEffector][1, 0:3],
+                             tmats[endEffector][2, 0:3]])
+        elif ((joint_class == 'LARM') or (joint_class == 'RARM') or (joint_class == 'HEAD')) and (
+                type(joint_nr) == int) and (joint_nr == 0):
+            trans_mat = np.matmul(tmats['CHEST_JOINT0'], tmats[endEffector])
+            return np.array([trans_mat[0, 3], trans_mat[1, 3], trans_mat[2, 3]]), \
+                   np.array([trans_mat[0, :3],
+                             trans_mat[1, :3],
+                             trans_mat[2, :3]])
+        elif (type(joint_nr) == int) and (joint_nr > 0):
+            prev_name = ""
+            trans_mat = np.matmul(tmats['CHEST_JOINT0'], tmats[joint_class + "_JOINT0"])
+            for i in range(0, joint_nr, 1):
+                name = joint_class + "_JOINT" + str(i)
+                next_name = joint_class + "_JOINT" + str(i + 1)
+
+                trans_mat = np.matmul(trans_mat, tmats[next_name])
+
+                # #for debugging
+                # name = name + "*" + prev_name
+                # print("iter:",i,": ","*",prev_name)
+
+            return np.array([trans_mat[0, 3], trans_mat[1, 3], trans_mat[2, 3]]), \
+                   np.array([trans_mat[0, :3],
+                             trans_mat[1, :3],
+                             trans_mat[2, :3]])
+        else:
+            print("ERROR: didn't recognise joint number")
+            return None, None
 
     # Task 1.2 Inverse Kinematics
 
@@ -329,9 +408,6 @@ class Simulation(Simulation_base):
         # positions for all joints after performing inverse kinematics.
 
         # inits
-        new_theta = None
-        curr_target = None
-        delta_step = None
 
         starting_EFpos, initOrientation = self.getJointLocationAndOrientation(endEffector)
 
@@ -342,10 +418,10 @@ class Simulation(Simulation_base):
         for i in tmats.keys():
             name = i.split("_")
             joint_class = name[0]
-            if (joint_class == 'base') or (joint_class == 'CHEST') or (joint_class == 'RHAND') or (
+            if (joint_class == 'base') or (joint_class == 'RHAND') or (
                     joint_class == 'LHAND'):
 
-                print("skipping:", i)
+                # print("skipping:", i)
                 continue
             else:
                 q = np.append(q, np.array([self.getJointPos(i)]), axis=0)
@@ -362,46 +438,27 @@ class Simulation(Simulation_base):
             curr_target = intermediate_targets[i, :]
 
             for iteration in range(maxIterPerStep):
+                #dy = curr_target - self.efForwardKinematics(endEffector, q)[0]
                 dy = curr_target - self.getJointPosition(endEffector)
                 J = self.jacobianMatrix(endEffector)
                 dq = np.matmul(np.linalg.pinv(J), dy)
 
                 q = q + dq
-                trajectory = np.append(trajectory, q, axis=1)
+                trajectory = np.append(trajectory, np.array([q]), axis=0)
 
+                for idj, j in enumerate(self.jointList):
+                    self.p.resetJointState(
+                        self.robot, self.jointIds[j], q[idj])
 
-
-
-        #  for i in range(IK_steps):
-
-        # # obtain the Jacobian, use the current joint configurations and E-F position
-        # ### START CODE HERE
-        # J = geomJacobian(joint2pos, joint3pos, endEffectorPos)
-        # ### END CODE HERE
-
-        # # compute the dy steps
-        # newgoal = step_positions[i, :]
-        # deltaStep = newgoal - endEffectorPos
-
-        # # define the dy
-        # subtarget = np.array([deltaStep[0], deltaStep[1], 0]) 
-
-        # # compute dq from dy and pseudo-Jacobian
-        # ### START CODE HERE
-        # radTheta = np.matmul(np.linalg.pinv(J),subtarget)
-        # ### END CODE HERE
-
-        # # update the robot configuration
-        # ### START CODE HERE
-        # newTheta = newTheta + radTheta
-        # ### END CODE HERE
-
-        # # ----------- Do forward kinematics to plot the arm ---------------
-        # # Do forward kinematics for a set angle on each joint
-        # T = arm.forwardKinematics(newTheta[0],newTheta[1],newTheta[2])
-
-        # # Find the x,y coordinates of joints 2, 3 and end effector so they can be plotted
-        # joint2pos, joint3pos, endEffectorPos = arm.findJointPos()
+                EF_position = self.efForwardKinematics(endEffector, q)[0]
+                if np.linalg.norm(EF_position - curr_target) < threshold:
+                    print('target number=', i, 'iteration=', iteration, 'target=',curr_target,'distance to target=',
+                          np.linalg.norm(EF_position - curr_target), 'ef_position=', self.getJointPosition(endEffector), 'config=', q)
+                    break
+                else:
+                    print('target number=', i, 'iteration=', iteration, 'target=', curr_target, 'distance to target=',
+                          np.linalg.norm(EF_position - curr_target), 'ef_position=', self.getJointPosition(endEffector),
+                          'config=', q)
 
         return trajectory
 
@@ -415,6 +472,8 @@ class Simulation(Simulation_base):
         """
         # TODO add your code here
         # iterate through joints and update joint states based on IK solver
+        q = self.inverseKinematics(endEffector, targetPosition, orientation, 100, maxIter, threshold)
+        print(q)
 
         # return pltTime, pltDistance
         pass

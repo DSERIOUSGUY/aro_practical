@@ -68,7 +68,7 @@ j_geo, j_rot = bullet_simulation.calculateJacobian(
 )
 #print()
 for col in j_geo:
-    #print(col)
+    print(col)
     pass
 #print()
 for col in j_rot:
@@ -77,13 +77,9 @@ for col in j_rot:
 #print()
 
 # print(sim.getTransformationMatrices())
-initPosition = sim.getJointPosition('LARM_JOINT5')
-initOrientation = sim.getJointOrientation('LARM_JOINT5')
-print('init_position', initPosition)
-print('init_orientation', initOrientation)
-targetPosition = np.array([0.37, 0.23, 1.06385])
-step_pos = np.linspace(initPosition, targetPosition, 10)
-print(step_pos[3, :])
+
+targetPosition = np.array([0.37, 0.23, -0.05315])
+sim.move_without_PD('LARM_JOINT5', targetPosition)
 
 
 
