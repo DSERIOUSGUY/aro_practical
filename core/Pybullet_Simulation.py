@@ -82,7 +82,7 @@ class Simulation(Simulation_base):
     """
 
     def getJointRotationalMatrix(self, jointName=None, theta=None):
-        if jointName == None:
+        if jointName is None:
             raise Exception("[getJointRotationalMatrix] \
                 Must provide a joint in order to compute the rotational matrix!")
         else:
@@ -148,18 +148,22 @@ class Simulation(Simulation_base):
         # their corresponding homogeneous transformation matrices as values.
 
         keys = self.jointRotationAxis.keys()
-        theta = np.deg2rad(0)
 
         for i in keys:
+            if (i == 'LHAND') or (i == 'RHAND'):
+                continue
             # #initial position
             # if(i == "RARM_JOINT2") or (i == "LARM_JOINT2"):
             #     theta = np.deg2rad(90)
             #     #TODO: check what theta should be
             # else:
             #     theta = np.deg2rad(0)
-
+            # print('joint=', i)
+            # print('axis=', self.jointRotationAxis[i])
+            theta = self.getJointPos(i)
+            # print('theta=', theta)
             rmat = self.getJointRotationalMatrix(i, theta)
-
+            # print('rmat=', rmat)
             transformationMatrices[i] = np.array([
                 self.append_to_array(rmat[0], self.frameTranslationFromParent[i][0]),
                 self.append_to_array(rmat[1], self.frameTranslationFromParent[i][1]),
@@ -179,7 +183,7 @@ class Simulation(Simulation_base):
 
     def getJointLocationAndOrientation(self, jointName):
 
-        # multiply part of the segment by its predecessor only (predecessor will contain other roation mats)
+        # multiply part of the segment by its predecessor only (predecessor will contain other rotation mats)
         # alg :
         #
         # if joint 0, return the trans matrix calc
@@ -239,7 +243,7 @@ class Simulation(Simulation_base):
                              trans_mat[1, :3],
                              trans_mat[2, :3]])
         else:
-            print("ERROR: didnt recognise joint number")
+            print("ERROR: didn't recognise joint number")
             return None, None
 
     def getJointPosition(self, jointName):
@@ -272,9 +276,8 @@ class Simulation(Simulation_base):
     @param endEffector string id of the endEffector e.g. LARM_JOINT5
     @return 3x15 Jacobian matrix
     """
+
     def jacobianMatrix(self, endEffector):
-
-
 
         pos = self.getJointPosition('CHEST_JOINT0')
         orient = 0
@@ -326,28 +329,48 @@ class Simulation(Simulation_base):
         # positions for all joints after performing inverse kinematics.
 
         # inits
-        target_step = None
+        new_theta = None
+        curr_target = None
         delta_step = None
 
-        initPosition, initOrientation = self.getJointLocationAndOrientation(endEffector)
+        starting_EFpos, initOrientation = self.getJointLocationAndOrientation(endEffector)
 
-        step_pos = np.linspace(initPosition, targetPosition, interpolationSteps)
+        intermediate_targets = np.linspace(starting_EFpos, targetPosition, interpolationSteps)
 
+        q = np.array([])
+        tmats = self.getTransformationMatrices()
+        for i in tmats.keys():
+            name = i.split("_")
+            joint_class = name[0]
+            if (joint_class == 'base') or (joint_class == 'CHEST') or (joint_class == 'RHAND') or (
+                    joint_class == 'LHAND'):
+
+                print("skipping:", i)
+                continue
+            else:
+                q = np.append(q, np.array([self.getJointPos(i)]), axis=0)
+
+        trajectory = np.array([q])  # should contain the current configuration angles
         # need to get matrix of thetas for reaching the final position
 
         for i in range(interpolationSteps):
 
             # setting max limit
-            if (i >= maxIterPerStep):
-                break
+            # if (i >= maxIterPerStep):
+            #    break
 
-            J = self.jacobianMatrix(endEffector)
-            target_step = step_pos[i, :]
-            delta_step = targetPosition - target_step
+            curr_target = intermediate_targets[i, :]
 
-            delta_theta = np.matmul(np.linalg.pinv(J), delta_step)
+            for iteration in range(maxIterPerStep):
+                dy = curr_target - self.getJointPosition(endEffector)
+                J = self.jacobianMatrix(endEffector)
+                dq = np.matmul(np.linalg.pinv(J), dy)
 
-            new_theta = new_theta + delta_theta
+                q = q + dq
+                trajectory = np.append(trajectory, q, axis=1)
+
+
+
 
         #  for i in range(IK_steps):
 
@@ -380,7 +403,7 @@ class Simulation(Simulation_base):
         # # Find the x,y coordinates of joints 2, 3 and end effector so they can be plotted
         # joint2pos, joint3pos, endEffectorPos = arm.findJointPos()
 
-        pass
+        return trajectory
 
     def move_without_PD(self, endEffector, targetPosition, speed=0.01, orientation=None,
                         threshold=1e-3, maxIter=3000, debug=False, verbose=False):
