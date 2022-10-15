@@ -78,7 +78,7 @@ for col in j_rot:
 
 # print(sim.getTransformationMatrices())
 
-targetPosition = np.array([0.37, 0.23, -0.05315])
+targetPosition = np.array([0.37, 0.23, 1.06385])
 sim.move_without_PD('LARM_JOINT5', targetPosition)
 
 

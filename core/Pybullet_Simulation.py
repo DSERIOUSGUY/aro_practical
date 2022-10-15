@@ -341,7 +341,8 @@ class Simulation(Simulation_base):
             joint_nr = name[0]
         else:
             joint_nr = int(name[-1][-1])  # only works for 1-digit codes
-        tmats = self.getTransformationMatrices()
+        # tmats = self.getTransformationMatrices()
+        tmats = transformationMatrices
 
         if joint_nr == 'base':
             # TODO
@@ -438,7 +439,7 @@ class Simulation(Simulation_base):
             curr_target = intermediate_targets[i, :]
 
             for iteration in range(maxIterPerStep):
-                #dy = curr_target - self.efForwardKinematics(endEffector, q)[0]
+                # dy = curr_target - self.efForwardKinematics(endEffector, q)[0]
                 dy = curr_target - self.getJointPosition(endEffector)
                 J = self.jacobianMatrix(endEffector)
                 dq = np.matmul(np.linalg.pinv(J), dy)
@@ -452,8 +453,9 @@ class Simulation(Simulation_base):
 
                 EF_position = self.efForwardKinematics(endEffector, q)[0]
                 if np.linalg.norm(EF_position - curr_target) < threshold:
-                    print('target number=', i, 'iteration=', iteration, 'target=',curr_target,'distance to target=',
-                          np.linalg.norm(EF_position - curr_target), 'ef_position=', self.getJointPosition(endEffector), 'config=', q)
+                    print('target number=', i, 'iteration=', iteration, 'target=', curr_target, 'distance to target=',
+                          np.linalg.norm(EF_position - curr_target), 'ef_position=', self.getJointPosition(endEffector),
+                          'config=', q)
                     break
                 else:
                     print('target number=', i, 'iteration=', iteration, 'target=', curr_target, 'distance to target=',
@@ -472,10 +474,19 @@ class Simulation(Simulation_base):
         """
         # TODO add your code here
         # iterate through joints and update joint states based on IK solver
-        q = self.inverseKinematics(endEffector, targetPosition, orientation, 100, maxIter, threshold)
-        print(q)
+        targetPosition[2] -= 0.85
+        trajectory = self.inverseKinematics(endEffector, targetPosition, orientation, 10, maxIter, threshold)
+        pltDistance = np.array([])
+        pltTime = np.arange(11)
+        for i in trajectory:
+            pltDistance = np.append(pltDistance, np.array(
+                [np.linalg.norm(self.efForwardKinematics(endEffector, i)[0] - targetPosition)]), axis=0)
 
-        # return pltTime, pltDistance
+
+
+
+
+        return pltTime, pltDistance
         pass
 
     def tick_without_PD(self):
