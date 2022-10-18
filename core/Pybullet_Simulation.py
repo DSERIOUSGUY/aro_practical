@@ -144,7 +144,7 @@ class Simulation(Simulation_base):
         # print("element:",element,"returning:",np_arr)
         return np.array(np_arr)
 
-    def getTransformationMatrices(self):
+    def getTransformationMatrices(self):  # add q for configuration
         """
             Returns the homogeneous transformation matrices for each joint as a dictionary of matrices.
         """
@@ -158,18 +158,11 @@ class Simulation(Simulation_base):
         for i in keys:
             if (i == 'LHAND') or (i == 'RHAND'):
                 continue
-            # #initial position
-            # if(i == "RARM_JOINT2") or (i == "LARM_JOINT2"):
-            #     theta = np.deg2rad(90)
-            #     #TODO: check what theta should be
-            # else:
-            #     theta = np.deg2rad(0)
-            # print('joint=', i)
-            # print('axis=', self.jointRotationAxis[i])
+
             theta = self.getJointPos(i)
-            # print('theta=', theta)
+
             rmat = self.getJointRotationalMatrix(i, theta)
-            # print('rmat=', rmat)
+
             transformationMatrices[i] = np.array([
                 self.append_to_array(rmat[0], self.frameTranslationFromParent[i][0]),
                 self.append_to_array(rmat[1], self.frameTranslationFromParent[i][1]),
@@ -187,7 +180,7 @@ class Simulation(Simulation_base):
          and a 3x3 array for the rotation matrix
     """
 
-    def getJointLocationAndOrientation(self, jointName):
+    def getJointLocationAndOrientation(self, jointName):  # add q argument for configuration
 
         # multiply part of the segment by its predecessor only (predecessor will contain other rotation mats)
         # alg :
@@ -447,6 +440,7 @@ class Simulation(Simulation_base):
                 q = q + dq
                 trajectory = np.append(trajectory, np.array([q]), axis=0)
 
+                # TODO: move this part to move without pd
                 for idj, j in enumerate(self.jointList):
                     self.p.resetJointState(
                         self.robot, self.jointIds[j], q[idj])
@@ -487,6 +481,7 @@ class Simulation(Simulation_base):
 
         pltDistance = np.array(pltDistance)
         pltTime = np.array(pltTime)
+
 
         return pltTime, pltDistance
         pass
