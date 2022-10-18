@@ -474,17 +474,19 @@ class Simulation(Simulation_base):
         """
         # TODO add your code here
         # iterate through joints and update joint states based on IK solver
+
+        #temp hotfix
         targetPosition[2] -= 0.85
         trajectory = self.inverseKinematics(endEffector, targetPosition, orientation, 10, maxIter, threshold)
-        pltDistance = np.array([])
-        pltTime = np.arange(11)
+        pltDistance = []
+        pltTime = []
+        initTime = time.time()
         for i in trajectory:
-            pltDistance = np.append(pltDistance, np.array(
-                [np.linalg.norm(self.efForwardKinematics(endEffector, i)[0] - targetPosition)]), axis=0)
+            pltDistance.append(np.linalg.norm(self.efForwardKinematics(endEffector, i)[0] - targetPosition))
+            pltTime.append(time.time()-initTime)
 
-
-
-
+        pltDistance = np.array(pltDistance)
+        pltTime = np.array(pltTime)
 
         return pltTime, pltDistance
         pass
