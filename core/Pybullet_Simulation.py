@@ -144,7 +144,7 @@ class Simulation(Simulation_base):
         # print("element:",element,"returning:",np_arr)
         return np.array(np_arr)
 
-    def getTransformationMatrices(self):  # add q for configuration
+    def getTransformationMatrices(self, q=None):  # add q for configuration
         """
             Returns the homogeneous transformation matrices for each joint as a dictionary of matrices.
         """
@@ -159,8 +159,11 @@ class Simulation(Simulation_base):
             if (i == 'LHAND') or (i == 'RHAND'):
                 continue
 
-            theta = self.getJointPos(i)
+            if q is None:
 
+                theta = self.getJointPos(i)
+            else:
+                theta = q[self.jointList.index(i)]
             rmat = self.getJointRotationalMatrix(i, theta)
 
             transformationMatrices[i] = np.array([
@@ -180,7 +183,7 @@ class Simulation(Simulation_base):
          and a 3x3 array for the rotation matrix
     """
 
-    def getJointLocationAndOrientation(self, jointName):  # add q argument for configuration
+    def getJointLocationAndOrientation(self, jointName, q=None):  # add q argument for configuration
 
         # multiply part of the segment by its predecessor only (predecessor will contain other rotation mats)
         # alg :
@@ -199,7 +202,7 @@ class Simulation(Simulation_base):
             joint_nr = name[0]
         else:
             joint_nr = int(name[-1][-1])  # only works for 1-digit codes
-        tmats = self.getTransformationMatrices()
+        tmats = self.getTransformationMatrices(q)
 
         if joint_nr == 'base':
             # TODO
@@ -276,7 +279,7 @@ class Simulation(Simulation_base):
     @return 3x15 Jacobian matrix
     """
 
-    def jacobianMatrix(self, endEffector):
+    def jacobianMatrix(self, endEffector, q=None):
 
         pos = self.getJointPosition('CHEST_JOINT0')
         orient = 0
@@ -292,7 +295,7 @@ class Simulation(Simulation_base):
             joint_class = name[0]
             if endEffector.find(joint_class) != -1:
                 # print("considering:", i)
-                pos, orient = self.getJointLocationAndOrientation(i)
+                pos, orient = self.getJointLocationAndOrientation(i, q)
 
                 col = np.append(col, np.array([np.cross(self.jointRotationAxis[i], end_pos - pos)]), axis=0)
 
