@@ -2,6 +2,7 @@
 # This file is only for helping you while development
 
 import subprocess, math, time, sys, os, numpy as np
+from matplotlib import markers
 import matplotlib.pyplot as plt
 import pybullet as bullet_simulation
 import pybullet_data
@@ -61,8 +62,11 @@ sim = Simulation(pybulletConfigs, robotConfigs, refVect=ref)
 # position assumes your world frame is located at the base. If your world
 # frame is located at the waist, you will need to transform this vector using
 # the base_to_waist translation.
+# endEffector = "LARM_JOINT5"
+# targetPosition = np.array([0.37, 0.23, 1.06385])  # x,y,z coordinates in world frame
 endEffector = "LARM_JOINT5"
 targetPosition = np.array([0.37, 0.23, 1.06385])  # x,y,z coordinates in world frame
+
 
 # #test code
 # tmats = sim.getTransformationMatrices()
@@ -81,7 +85,7 @@ task1_savefig = True
 
 fig = plt.figure(figsize=(6, 4))
 
-plt.plot(pltTime, pltEFPosition, color='blue')
+plt.plot(pltTime, pltEFPosition, color='blue',marker="x")
 plt.xlabel("Time s")
 plt.ylabel("Distance to target position")
 
