@@ -513,7 +513,12 @@ class Simulation(Simulation_base):
             u(t) - the manipulation signal
         """
         # TODO: Add your code here
-        pass
+        
+        u = kp*(x_ref-x_real) - kd*(dx_ref - dx_real)
+        # print("DEBUG PRINT (CONTROL):\n",u)
+
+        return u
+
 
     # Task 2.2 Joint Manipulation
     def moveJoint(self, joint, targetPosition, targetVelocity, verbose=False):
@@ -533,10 +538,10 @@ class Simulation(Simulation_base):
 
             ### Start your code here: ###
             # Calculate the torque with the above method you've made
-            torque = 0.0
-            ### To here ###
-
+            torque = self.calculateTorque(x_ref, x_real, dx_ref, dx_real, integral,kp,ki,kd)
             pltTorque.append(torque)
+            ### To here ###
+            print("DEBUG PRINT(TORQUE):",pltTorque)
 
             # send the manipulation signal to the joint
             self.p.setJointMotorControl2(
@@ -548,6 +553,8 @@ class Simulation(Simulation_base):
             # calculate the physics and update the world
             self.p.stepSimulation()
             time.sleep(self.dt)
+            return torque
+
 
         targetPosition, targetVelocity = float(targetPosition), float(targetVelocity)
 
@@ -555,6 +562,21 @@ class Simulation(Simulation_base):
         self.disableVelocityController(joint)
         # logging for the graph
         pltTime, pltTarget, pltTorque, pltTorqueTime, pltPosition, pltVelocity = [], [], [], [], [], []
+
+        joint_pos = self.getJointPos(joint)
+
+        #Have: joint, targetPosition, targetVelocity
+        #Required: x_ref, x_real, dx_ref, dx_real, integral
+        
+        #test
+        joint_vel = (targetPosition - joint_pos)/self.dt
+        print("calc vel:",joint_vel, "vel:",self.getJointVel(joint))
+
+        print("JOINT:",joint)
+        print(targetPosition,"|",joint_pos,"|",targetVelocity,"|",joint_vel,"|",0)
+        toy_tick(targetPosition,joint_pos,targetVelocity,joint_vel,0)
+    
+
 
         return pltTime, pltTarget, pltTorque, pltTorqueTime, pltPosition, pltVelocity
 
