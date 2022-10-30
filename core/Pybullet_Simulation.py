@@ -580,36 +580,66 @@ class Simulation(Simulation_base):
 
         dist = targetPosition - joint_pos
         dist_remaining = dist
+        prev_dist_remaining = dist_remaining
 
         joint_vel = dist/self.dt
 
+        #test params
+        test_cntr = 0
+        testing = 0
+        test_iters = 101
+        threshold = 0.001
+
         print("\n---------------\n")
 
-        while(dist_remaining != 0):
+        while dist_remaining != 0 and abs(dist_remaining) > abs(threshold):
+            if testing == 1:
+                test_cntr += 1
+                if(test_cntr%test_iters == 0):
+                    break
+
+            pltPosition.append(joint_pos)
+
             if abs(joint_vel) > abs(max_vel) and dist_remaining != 0:
                 dist = max_vel*self.dt
+                joint_vel = max_vel
 
-                print("calc vel:",joint_vel, "curr vel:",self.getJointVel(joint))
+                if test_cntr % 10 == 0:
+                    print("calc vel:",joint_vel, "curr vel:",self.getJointVel(joint))
+                    print("JOINT:",joint)
+                    print(targetPosition,"|",joint_pos,"|",targetVelocity,"|",max_vel,"|",0)
 
-                print("JOINT:",joint)
-                print(targetPosition,"|",joint_pos,"|",targetVelocity,"|",max_vel,"|",0)
-                toy_tick(targetPosition,joint_pos,targetVelocity,max_vel,0)
-                print("curr vel:",self.getJointVel(joint))
+
+                if abs(dist_remaining) > abs(prev_dist_remaining):
+                    joint_vel = -1*max_vel
+                toy_tick(targetPosition,joint_pos,targetVelocity,joint_vel,0)
+                # print("curr vel:",self.getJointVel(joint))
 
             else:
-                print("velocity under control")
-                print("calc vel:",joint_vel, "curr vel:",self.getJointVel(joint))
-
-                print("JOINT:",joint)
-                print(targetPosition,"|",joint_pos,"|",targetVelocity,"|",joint_vel,"|",0)
+                if test_cntr % 10 == 0:
+                    print("velocity under control")
+                    print("calc vel:",joint_vel, "curr vel:",self.getJointVel(joint))
+                    print("JOINT:",joint)
+                    print(targetPosition,"|",joint_pos,"|",targetVelocity,"|",joint_vel,"|",0)
+            
+                if abs(dist_remaining) > abs(prev_dist_remaining):
+                    joint_vel = -1*max_vel
                 toy_tick(targetPosition,joint_pos,targetVelocity,joint_vel,0)
-                print("curr vel:",self.getJointVel(joint))
+                #print("curr vel:",self.getJointVel(joint))
 
-            print("DEBUG: Distance:",dist_remaining)
+            if test_cntr % 10 == 0:
+                print("DEBUG: Distance:",dist_remaining)
+                print("\n---------------\n")
             dist_remaining = dist_remaining - dist
             joint_vel = dist_remaining/self.dt
+        
             pltTime.append(time.time())
-            print("\n---------------\n")
+            joint_pos = self.getJointPos(joint)
+
+
+            
+
+            
 
 
         return pltTime, pltTarget, pltTorque, pltTorqueTime, pltPosition, pltVelocity
