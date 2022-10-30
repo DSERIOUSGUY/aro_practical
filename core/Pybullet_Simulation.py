@@ -631,8 +631,9 @@ class Simulation(Simulation_base):
                 toy_tick(targetPosition, joint_pos, targetVelocity, joint_vel, 0)
                 # print("curr vel:",self.getJointVel(joint))
 
-            dist_remaining -= dist
-            joint_vel = dist_remaining / self.dt
+
+
+
 
             if test_cntr % 10 == 0:
                 print("DEBUG: Distance remaining:", dist_remaining, "\n joint_vel:", joint_vel, "\n Distance:", dist)
@@ -641,6 +642,7 @@ class Simulation(Simulation_base):
             pltTime.append(time.time())
             prev_joint_pos = joint_pos
             joint_pos = self.getJointPos(joint)
+            dist_remaining = targetPosition - joint_pos
 
         return pltTime, pltTarget, pltTorque, pltTorqueTime, pltPosition, pltVelocity
 
