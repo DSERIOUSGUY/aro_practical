@@ -602,11 +602,11 @@ class Simulation(Simulation_base):
         test_cntr = 0
         testing = 0
         test_iters = 101
-        threshold = 0.01
+        threshold = 1e-3
 
         print("\n---------------\n")
 
-        while abs(dist_remaining) > abs(threshold):
+        while abs(dist_remaining) > abs(threshold) or targetVelocity != joint_vel:
             if testing == 1:
                 test_cntr += 1
                 if test_cntr % test_iters == 0:
@@ -647,9 +647,9 @@ class Simulation(Simulation_base):
             pltTime.append(time.time())
             prev_joint_pos = joint_pos
             joint_pos = self.getJointPos(joint)
+            joint_vel = (joint_pos - prev_joint_pos) / self.dt
 
-            dist_remaining -= dist
-            joint_vel = dist_remaining / self.dt
+            dist_remaining -= joint_pos
 
             if test_cntr % 10 == 0:
                 print("DEBUG: Distance remaining:", dist_remaining, "\n joint_vel:", joint_vel, "\n Distance:", dist)
