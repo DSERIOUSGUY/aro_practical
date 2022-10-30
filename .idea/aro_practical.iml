@@ -6,6 +6,7 @@
       <sourceFolder url="file://$MODULE_DIR$/core" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/core/nextagea_description" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/task1" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/task2" isTestSource="false" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.6 (ARO_Practical)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
