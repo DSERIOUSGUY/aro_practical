@@ -30,7 +30,7 @@ LARM_JOINT1_position_controller:
 LARM_JOINT2_position_controller:
   type: effort_controllers/JointPositionController
   joint: LARM_JOINT2
-  pid: {p: 5.0, i: 5.0, d: 1}
+  pid: {p: 1000.0, i: 5.0, d: 50}
 LARM_JOINT3_position_controller:
   type: effort_controllers/JointPositionController
   joint: LARM_JOINT3
@@ -42,7 +42,7 @@ LARM_JOINT4_position_controller:
 LARM_JOINT5_position_controller:
   type: effort_controllers/JointPositionController
   joint: LARM_JOINT5
-  pid: {p: 5.0, i: 5.0, d: 5.0}
+  pid: {p: 1000, i: 1.0, d: 0}
 # Position Controllers (Right arm) ---------------------------------------
 RARM_JOINT0_position_controller:
   type: effort_controllers/JointPositionController
