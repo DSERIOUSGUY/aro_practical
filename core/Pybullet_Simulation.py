@@ -616,7 +616,7 @@ class Simulation(Simulation_base):
             joint_vel = (joint_pos - prev_joint_pos) / self.dt
 
             if abs(dist_remaining) > abs(max_possible_distance):
-                dist = calculate_dist(max_vel,joint_vel,self.dt)
+
 
                 if test_cntr % 10 == 0:
                     print("calc vel:", joint_vel, "curr vel:", self.getJointVel(joint))
@@ -630,7 +630,7 @@ class Simulation(Simulation_base):
                 # print("curr vel:",self.getJointVel(joint))
 
             else:
-                dist = calculate_dist(targetVelocity,joint_vel,self.dt)
+
                 if test_cntr % 10 == 0:
                     print("velocity under control")
                     print("calc vel:", joint_vel, "curr vel:", self.getJointVel(joint))
@@ -652,7 +652,7 @@ class Simulation(Simulation_base):
             dist_remaining = targetPosition - joint_pos
 
             if test_cntr % 10 == 0:
-                print("DEBUG: Distance remaining:", dist_remaining, "\n joint_vel:", joint_vel, "\n Distance:", dist)
+                print("DEBUG: Distance remaining:", dist_remaining, "\n joint_vel:", joint_vel)
                 print("\n---------------\n")
 
         return pltTime, pltTarget, pltTorque, pltTorqueTime, pltPosition, pltVelocity
