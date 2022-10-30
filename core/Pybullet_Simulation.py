@@ -1,3 +1,4 @@
+from dis import dis
 from scipy.spatial.transform import Rotation as npRotation
 from scipy.special import comb
 from scipy.interpolate import CubicSpline
@@ -547,7 +548,7 @@ class Simulation(Simulation_base):
             torque = self.calculateTorque(x_ref, x_real, dx_ref, dx_real, integral,kp,ki,kd)
             pltTorque.append(torque)
             ### To here ###
-            print("DEBUG PRINT(TORQUE):",pltTorque)
+            # print("DEBUG PRINT(TORQUE):",pltTorque)
 
             # send the manipulation signal to the joint
             self.p.setJointMotorControl2(
@@ -559,7 +560,6 @@ class Simulation(Simulation_base):
             # calculate the physics and update the world
             self.p.stepSimulation()
             time.sleep(self.dt)
-            return torque
 
 
         targetPosition, targetVelocity = float(targetPosition), float(targetVelocity)
@@ -575,13 +575,41 @@ class Simulation(Simulation_base):
         #Required: x_ref, x_real, dx_ref, dx_real, integral
         
         #test
-        joint_vel = (targetPosition - joint_pos)/self.dt
-        print("calc vel:",joint_vel, "vel:",self.getJointVel(joint))
 
-        print("JOINT:",joint)
-        print(targetPosition,"|",joint_pos,"|",targetVelocity,"|",joint_vel,"|",0)
-        toy_tick(targetPosition,joint_pos,targetVelocity,joint_vel,0)
-    
+        max_vel = 3 #3m/s
+
+        dist = targetPosition - joint_pos
+        dist_remaining = dist
+
+        joint_vel = dist/self.dt
+
+        print("\n---------------\n")
+
+        while(dist_remaining != 0):
+            if abs(joint_vel) > abs(max_vel) and dist_remaining != 0:
+                dist = max_vel*self.dt
+
+                print("calc vel:",joint_vel, "curr vel:",self.getJointVel(joint))
+
+                print("JOINT:",joint)
+                print(targetPosition,"|",joint_pos,"|",targetVelocity,"|",max_vel,"|",0)
+                toy_tick(targetPosition,joint_pos,targetVelocity,max_vel,0)
+                print("curr vel:",self.getJointVel(joint))
+
+            else:
+                print("velocity under control")
+                print("calc vel:",joint_vel, "curr vel:",self.getJointVel(joint))
+
+                print("JOINT:",joint)
+                print(targetPosition,"|",joint_pos,"|",targetVelocity,"|",joint_vel,"|",0)
+                toy_tick(targetPosition,joint_pos,targetVelocity,joint_vel,0)
+                print("curr vel:",self.getJointVel(joint))
+
+            print("DEBUG: Distance:",dist_remaining)
+            dist_remaining = dist_remaining - dist
+            joint_vel = dist_remaining/self.dt
+            pltTime.append(time.time())
+            print("\n---------------\n")
 
 
         return pltTime, pltTarget, pltTorque, pltTorqueTime, pltPosition, pltVelocity
