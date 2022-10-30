@@ -643,6 +643,7 @@ class Simulation(Simulation_base):
             prev_joint_pos = joint_pos
             joint_pos = self.getJointPos(joint)
             dist_remaining = targetPosition - joint_pos
+            # this is a comment
 
         return pltTime, pltTarget, pltTorque, pltTorqueTime, pltPosition, pltVelocity
 
