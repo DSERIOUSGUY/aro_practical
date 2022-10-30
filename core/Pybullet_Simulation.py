@@ -649,7 +649,7 @@ class Simulation(Simulation_base):
             joint_pos = self.getJointPos(joint)
             joint_vel = (joint_pos - prev_joint_pos) / self.dt
 
-            dist_remaining -= joint_pos
+            dist_remaining = targetPosition - joint_pos
 
             if test_cntr % 10 == 0:
                 print("DEBUG: Distance remaining:", dist_remaining, "\n joint_vel:", joint_vel, "\n Distance:", dist)
