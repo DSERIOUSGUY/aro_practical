@@ -144,7 +144,7 @@ class Simulation(Simulation_base):
         # print("element:",element,"returning:",np_arr)
         return np.array(np_arr)
 
-    def getTransformationMatrices(self):  # add q for configuration
+    def getTransformationMatrices(self, q=None):  # add q for configuration
         """
             Returns the homogeneous transformation matrices for each joint as a dictionary of matrices.
         """
@@ -155,12 +155,15 @@ class Simulation(Simulation_base):
 
         keys = self.jointRotationAxis.keys()
 
-        for i in keys:
+        for i in self.jointList:
             if (i == 'LHAND') or (i == 'RHAND'):
                 continue
 
-            theta = self.getJointPos(i)
+            if q is None:
 
+                theta = self.getJointPos(i)
+            else:
+                theta = q[self.jointList.index(i)]
             rmat = self.getJointRotationalMatrix(i, theta)
 
             transformationMatrices[i] = np.array([
@@ -180,7 +183,7 @@ class Simulation(Simulation_base):
          and a 3x3 array for the rotation matrix
     """
 
-    def getJointLocationAndOrientation(self, jointName):  # add q argument for configuration
+    def getJointLocationAndOrientation(self, jointName, q=None):  # add q argument for configuration
 
         # multiply part of the segment by its predecessor only (predecessor will contain other rotation mats)
         # alg :
@@ -199,7 +202,7 @@ class Simulation(Simulation_base):
             joint_nr = name[0]
         else:
             joint_nr = int(name[-1][-1])  # only works for 1-digit codes
-        tmats = self.getTransformationMatrices()
+        tmats = self.getTransformationMatrices(q)
 
         if joint_nr == 'base':
             # TODO
@@ -276,14 +279,14 @@ class Simulation(Simulation_base):
     @return 3x15 Jacobian matrix
     """
 
-    def jacobianMatrix(self, endEffector):
+    def jacobianMatrix(self, endEffector, q=None):
 
-        pos = self.getJointPosition('CHEST_JOINT0')
+        pos, orient = self.getJointLocationAndOrientation('CHEST_JOINT0', q)
         orient = 0
 
         joint_class = ""
 
-        end_pos, orient = self.getJointLocationAndOrientation(endEffector)
+        end_pos, orient = self.getJointLocationAndOrientation(endEffector, q)
         col = np.array([np.cross(self.jointRotationAxis['CHEST_JOINT0'], end_pos - pos)])
         tmats = self.getTransformationMatrices()
         for i in tmats.keys():
@@ -292,7 +295,7 @@ class Simulation(Simulation_base):
             joint_class = name[0]
             if endEffector.find(joint_class) != -1:
                 # print("considering:", i)
-                pos, orient = self.getJointLocationAndOrientation(i)
+                pos, orient = self.getJointLocationAndOrientation(i, q)
 
                 col = np.append(col, np.array([np.cross(self.jointRotationAxis[i], end_pos - pos)]), axis=0)
 
@@ -432,18 +435,19 @@ class Simulation(Simulation_base):
             curr_target = intermediate_targets[i, :]
 
             for iteration in range(maxIterPerStep):
-                # dy = curr_target - self.efForwardKinematics(endEffector, q)[0]
-                dy = curr_target - self.getJointPosition(endEffector)
-                J = self.jacobianMatrix(endEffector)
+                dy = curr_target - self.efForwardKinematics(endEffector, q)[0]
+                # EFpos, EForient = self.getJointLocationAndOrientation(endEffector, q)
+                # dy = curr_target - self.getJointPosition(endEffector)
+                J = self.jacobianMatrix(endEffector, q)
                 dq = np.matmul(np.linalg.pinv(J), dy)
 
                 q = q + dq
                 trajectory = np.append(trajectory, np.array([q]), axis=0)
 
                 # TODO: move this part to move without pd
-                for idj, j in enumerate(self.jointList):
-                    self.p.resetJointState(
-                        self.robot, self.jointIds[j], q[idj])
+                # for idj, j in enumerate(self.jointList):
+                #    self.p.resetJointState(
+                #        self.robot, self.jointIds[j], q[idj])
 
                 EF_position = self.efForwardKinematics(endEffector, q)[0]
                 if np.linalg.norm(EF_position - curr_target) < threshold:
@@ -469,19 +473,21 @@ class Simulation(Simulation_base):
         # TODO add your code here
         # iterate through joints and update joint states based on IK solver
 
-        #temp hotfix
+        # temp hotfix
         targetPosition[2] -= 0.85
         trajectory = self.inverseKinematics(endEffector, targetPosition, orientation, 10, maxIter, threshold)
         pltDistance = []
         pltTime = []
         initTime = time.time()
         for i in trajectory:
+            for idj, j in enumerate(self.jointList):
+                self.p.resetJointState(
+                    self.robot, self.jointIds[j], i[idj])
             pltDistance.append(np.linalg.norm(self.efForwardKinematics(endEffector, i)[0] - targetPosition))
-            pltTime.append(time.time()-initTime)
+            pltTime.append(time.time() - initTime)
 
         pltDistance = np.array(pltDistance)
         pltTime = np.array(pltTime)
-
 
         return pltTime, pltDistance
         pass
