@@ -598,7 +598,7 @@ class Simulation(Simulation_base):
         test_cntr = 0
         testing = 0
         test_iters = 101
-        threshold = 1e-2
+        threshold = 5e-3
 
         print("max possible distance: ", max_possible_distance, "total distance to cover:", dist_remaining)
         print("\n---------------\n")
