@@ -81,6 +81,8 @@ class Simulation(Simulation_base):
         'LARM_JOINT4', 'LARM_JOINT5', 'RARM_JOINT0', 'RARM_JOINT1', 'RARM_JOINT2', 'RARM_JOINT3', 'RARM_JOINT4',
         'RARM_JOINT5')
 
+
+
     """
     Returns the 3x3 rotation matrix for a joint from the axis-angle representation,
     where the axis is given by the revolution axis of the joint and the angle is theta.
@@ -698,7 +700,11 @@ class Simulation(Simulation_base):
 
             ### Implement your code from here ... ###
             # TODO: obtain torque from PD controller
-            torque = 0.0  # TODO: fix me
+
+            x_real = self.getJointPos(joint)
+            dx_ref = 0
+            integral = 0
+            torque = self.calculateTorque(x_ref, x_real, dx_ref, dx_real, integral, kp, ki, kd)
             ### ... to here ###
 
             self.p.setJointMotorControl2(
