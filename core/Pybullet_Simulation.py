@@ -702,7 +702,7 @@ class Simulation(Simulation_base):
                 self.disableVelocityController(joint)
 
                 # loads your PID gains
-                kp = self.ctrlConfig[jointController]['pid']['p']/50
+                kp = self.ctrlConfig[jointController]['pid']['p']/75
                 ki = self.ctrlConfig[jointController]['pid']['i']/100
                 kd = self.ctrlConfig[jointController]['pid']['d']/100
 
@@ -726,7 +726,7 @@ class Simulation(Simulation_base):
                 delta_pos[joint] = x_ref - x_real
                 delta_vel[joint] = dx_ref - dx_real
 
-                if(x_real!=x_ref or dx_real!=dx_ref):    
+                if(x_real!=x_ref or dx_real!=dx_ref or joint==endEffector):    
                     print("\nJoint Name:",joint,\
                         "\nDelta position:",delta_pos[joint],"Delta Vel:",delta_vel[joint],\
                         "\t\ntarget pos:",x_ref,"real pos:",x_real,\
@@ -756,10 +756,19 @@ class Simulation(Simulation_base):
                 )
                 # Gravity compensation ends here
 
+
+        endEffectorPos = self.getJointLocationAndOrientation(endEffector)[0]
+        delta_coordinate = []
+        for i in range(len(finalTargetPos)):
+            delta_coordinate.append(finalTargetPos[i]-endEffectorPos[i])
+
+
         self.p.stepSimulation()
         self.drawDebugLines()
         time.sleep(self.dt)
-        return delta_pos,delta_vel
+
+
+        return delta_pos,delta_vel,delta_coordinate
 
     ########## Task 3: Robot Manipulation ##########
     def cubic_interpolation(self, points, nTimes=100):

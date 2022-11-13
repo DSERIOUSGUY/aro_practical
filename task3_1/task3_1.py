@@ -126,19 +126,30 @@ def solution():
 
 tableId, cubeId, targetId = getReadyForTask()
 
-print("IN SIM TICK")
-traj = np.linspace([0,0,0],[-1,0.0,-1],100)
+# joint = "LARM_JOINT5"
+joint = None
+
+Target = [-0.1,-0.1,-0.1]
+
+print("Joint in observation:",joint)
+traj = np.linspace([0,0,0],Target,200)
 delta_pos_plot = []
 delta_vel_plot = []
+delta_coordinate_plot = []
 for i in traj:
-    del_pos, del_vel = sim.tick(i)
+    del_pos, del_vel,del_coo = sim.tick(i)
     delta_pos_plot.append(del_pos)
     delta_vel_plot.append(del_vel)
+    delta_coordinate_plot.append(del_coo)
 
-    time.sleep(1/1000)
+    # time.sleep(1/1000)
 
 
 # print(delta_pos_plot)
+
+def symmetrize_y_axis(axes):
+    y_max = np.abs(axes.get_ylim()).max()
+    axes.set_ylim(ymin=-y_max, ymax=y_max)
 
 delta_pos_df = pd.DataFrame()
 delta_vel_df = pd.DataFrame()
@@ -149,13 +160,30 @@ for i in delta_pos_plot:
 for j in delta_vel_plot:
     delta_vel_df = delta_vel_df.append(j,ignore_index=True)
 
-fig, axes = plt.subplots(nrows=2, ncols=1)
+fig, axes = plt.subplots(nrows=3, ncols=1)
 
-delta_pos_df.plot(ax=axes[0])
-delta_vel_df.plot(ax=axes[1])
+if joint != None:
+    delta_pos_df[joint].plot(ax=axes[0])
+    delta_vel_df[joint].plot(ax=axes[1])
+else:
+    delta_pos_df.plot(ax=axes[0])
+    delta_vel_df.plot(ax=axes[1])
+
+axes[2].plot(delta_coordinate_plot)
 
 axes[0].get_legend().remove()
+axes[0].set_title("delta pos(when simulating)")
+
+axes[1].set_title("delta vel")
 axes[1].legend(loc="lower left")
+
+axes[2].set_title("end effector delta(to target)")
+axes[2].legend(["x","y","z"],loc="lower left")
+# plt.title("delta for:",joint)
+for i in range(3):
+    symmetrize_y_axis(axes[i])
+
+fig.tight_layout()
 
 plt.show()
 # solution()
