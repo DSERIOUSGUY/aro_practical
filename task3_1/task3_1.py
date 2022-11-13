@@ -85,7 +85,7 @@ def getReadyForTask():
     )
     for _ in range(200):
         print("sending final target:",finalTargetPos)
-        # sim.tick(finalTargetPos)
+        sim.tick(None)
         time.sleep(1./1000)
 
     return tableId, cubeId, targetId
@@ -129,10 +129,12 @@ tableId, cubeId, targetId = getReadyForTask()
 # joint = "LARM_JOINT5"
 joint = None
 
-Target = [-0.1,-0.1,-0.1]
+# Target = [0.7, 0.00, 0.91]
+Target = [-0.2, 0, 0.1]
+iters = 1000
 
 print("Joint in observation:",joint)
-traj = np.linspace([0,0,0],Target,200)
+traj = np.linspace([0,0,0],Target,iters)
 delta_pos_plot = []
 delta_vel_plot = []
 delta_coordinate_plot = []
@@ -140,9 +142,9 @@ for i in traj:
     del_pos, del_vel,del_coo = sim.tick(i)
     delta_pos_plot.append(del_pos)
     delta_vel_plot.append(del_vel)
-    delta_coordinate_plot.append(del_coo)
+    delta_coordinate_plot.append(del_coo+[0])
 
-    # time.sleep(1/1000)
+    time.sleep(1./1000)
 
 
 # print(delta_pos_plot)
@@ -178,8 +180,8 @@ axes[1].set_title("delta vel")
 axes[1].legend(loc="lower left")
 
 axes[2].set_title("end effector delta(to target)")
-axes[2].legend(["x","y","z"],loc="lower left")
-# plt.title("delta for:",joint)
+axes[2].legend(["x","y","z","target"],loc="lower left")
+
 for i in range(3):
     symmetrize_y_axis(axes[i])
 

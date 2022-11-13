@@ -666,7 +666,7 @@ class Simulation(Simulation_base):
         # return pltTime, pltDistance
         pass
 
-    def tick(self,finalTargetPos):
+    def tick(self,targetPos):
         """Ticks one step of simulation using PD control."""
 
         # def inverseKinematics(self, endEffector, targetPosition, orientation, interpolationSteps, maxIterPerStep,
@@ -678,9 +678,19 @@ class Simulation(Simulation_base):
 
         # finalTargetPos[2] -= 0.85
 
+        finalTargetPos = targetPos
+
         endEffector = "LARM_JOINT5"
         print("target found:",finalTargetPos)
-        trajectory = self.inverseKinematics(endEffector,finalTargetPos,0,3,1,0.01)
+
+        try:
+            if(targetPos == None):
+                finalTargetPos = self.getJointLocationAndOrientation(endEffector)[0]
+        except Exception as e:
+            print("error while parsing target location, no movement\n")
+
+            
+        trajectory = self.inverseKinematics(endEffector,finalTargetPos,0,2,1,0.01)
         prev_joint_pos = {}
         delta_pos = {}
         delta_vel = {}
@@ -702,7 +712,7 @@ class Simulation(Simulation_base):
                 self.disableVelocityController(joint)
 
                 # loads your PID gains
-                kp = self.ctrlConfig[jointController]['pid']['p']/75
+                kp = self.ctrlConfig[jointController]['pid']['p']/100
                 ki = self.ctrlConfig[jointController]['pid']['i']/100
                 kd = self.ctrlConfig[jointController]['pid']['d']/100
 
