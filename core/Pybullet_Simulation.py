@@ -455,14 +455,15 @@ class Simulation(Simulation_base):
 
                 EF_position = self.efForwardKinematics(endEffector, q)[0]
                 if np.linalg.norm(EF_position - curr_target) < threshold:
-                    print('target number=', i, 'iteration=', iteration, 'target=', curr_target, 'distance to target=',
-                          np.linalg.norm(EF_position - curr_target), 'ef_position=', self.getJointPosition(endEffector),
-                          'config=', q)
+                    # print('target number=', i, 'iteration=', iteration, 'target=', curr_target, 'distance to target=',
+                    #       np.linalg.norm(EF_position - curr_target), 'ef_position=', self.getJointPosition(endEffector),
+                    #       'config=', q)
                     break
-                else:
-                    print('target number=', i, 'iteration=', iteration, 'target=', curr_target, 'distance to target=',
-                          np.linalg.norm(EF_position - curr_target), 'ef_position=', self.getJointPosition(endEffector),
-                          'config=', q)
+                else:          
+                    # print('target number=', i, 'iteration=', iteration, 'target=', curr_target, 'distance to target=',
+                    #       np.linalg.norm(EF_position - curr_target), 'ef_position=', self.getJointPosition(endEffector),
+                    #       'config=', q)
+                    pass
 
         return trajectory
 
@@ -600,7 +601,7 @@ class Simulation(Simulation_base):
         test_cntr = 0
         testing = 0
         test_iters = 101
-        threshold = 5e-3
+        threshold = 0.035
 
         print("max possible distance: ", max_possible_distance, "total distance to cover:", dist_remaining)
         print("\n---------------\n")
@@ -625,22 +626,6 @@ class Simulation(Simulation_base):
                 #     joint_vel = -1*max_vel
                 toy_tick(targetPosition, joint_pos, targetVelocity, joint_vel, 0)
                 # print("curr vel:",self.getJointVel(joint))
-
-            else:
-
-                # if test_cntr % 10 == 0:
-                # print("velocity under control")
-                # print("calc vel:", joint_vel, "curr vel:", self.getJointVel(joint))
-                # print("JOINT:", joint)
-                # print("Target:", targetPosition, "\n Joint pos:", joint_pos, "\n Target vel:", targetVelocity,
-                #      "\n Current vel", joint_vel)
-
-                # if abs(dist_remaining) > abs(prev_dist_remaining):
-                #     joint_vel = -1*max_vel
-                toy_tick(targetPosition, joint_pos, targetVelocity, joint_vel, 0)
-                # print("curr vel:",self.getJointVel(joint))
-
-
 
 
             prev_joint_pos = joint_pos
@@ -681,55 +666,100 @@ class Simulation(Simulation_base):
         # return pltTime, pltDistance
         pass
 
-    def tick(self):
+    def tick(self,finalTargetPos):
         """Ticks one step of simulation using PD control."""
+
+        # def inverseKinematics(self, endEffector, targetPosition, orientation, interpolationSteps, maxIterPerStep,
+        #     threshold):
+
+        #get robot config from IK for a given end effector position
+        #iterate through all joints and apply the given configurations
+        # global finalTargetPos
+
+        # finalTargetPos[2] -= 0.85
+
+        endEffector = "LARM_JOINT5"
+        print("target found:",finalTargetPos)
+        trajectory = self.inverseKinematics(endEffector,finalTargetPos,0,3,1,0.01)
+        prev_joint_pos = {}
+        delta_pos = {}
+        delta_vel = {}
+        step_cntr = 0
+
         # Iterate through all joints and update joint states using PD control.
-        for joint in self.joints:
-            # skip dummy joints (world to base joint)
-            jointController = self.jointControllers[joint]
-            if jointController == 'SKIP_THIS_JOINT':
-                continue
+        for curr_config in trajectory:
 
-            # disable joint velocity controller before apply a torque
-            self.disableVelocityController(joint)
+            print("\n\nSTEP:",step_cntr,"-------------------------------------------------------------------------------------\n")
+            step_cntr += 1
 
-            # loads your PID gains
-            kp = self.ctrlConfig[jointController]['pid']['p']
-            ki = self.ctrlConfig[jointController]['pid']['i']
-            kd = self.ctrlConfig[jointController]['pid']['d']
+            for joint in self.joints:
+                # skip dummy joints (world to base joint)
+                jointController = self.jointControllers[joint]
+                if jointController == 'SKIP_THIS_JOINT':
+                    continue
 
-            ### Implement your code from here ... ###
-            # TODO: obtain torque from PD controller
+                # disable joint velocity controller before apply a torque
+                self.disableVelocityController(joint)
 
-            x_real = self.getJointPos(joint)
-            dx_ref = 0
-            integral = 0
-            torque = self.calculateTorque(x_ref, x_real, dx_ref, dx_real, integral, kp, ki, kd)
-            ### ... to here ###
+                # loads your PID gains
+                kp = self.ctrlConfig[jointController]['pid']['p']/50
+                ki = self.ctrlConfig[jointController]['pid']['i']/100
+                kd = self.ctrlConfig[jointController]['pid']['d']/100
 
-            self.p.setJointMotorControl2(
-                bodyIndex=self.robot,
-                jointIndex=self.jointIds[joint],
-                controlMode=self.p.TORQUE_CONTROL,
-                force=torque
-            )
+                ### Implement your code from here ... ###
+                # TODO: obtain torque from PD controller
 
-            # Gravity compensation
-            # A naive gravitiy compensation is provided for you
-            # If you have embeded a better compensation, feel free to modify
-            compensation = self.jointGravCompensation[joint]
-            self.p.applyExternalForce(
-                objectUniqueId=self.robot,
-                linkIndex=self.jointIds[joint],
-                forceObj=[0, 0, -compensation],
-                posObj=self.getLinkCoM(joint),
-                flags=self.p.WORLD_FRAME
-            )
-            # Gravity compensation ends here
+                
+                x_ref = curr_config[self.jointList.index(joint)]
+                x_real = self.getJointPos(joint)
+                dx_ref = 0
+                integral = 0
+
+                if joint in prev_joint_pos.keys():
+                    dx_real = (x_real - prev_joint_pos[joint])/self.dt
+                else:
+                    dx_real = 0
+                    prev_joint_pos[joint] = x_real
+                    delta_pos[joint] = np.inf
+                    delta_vel[joint] = np.inf
+
+                delta_pos[joint] = x_ref - x_real
+                delta_vel[joint] = dx_ref - dx_real
+
+                if(x_real!=x_ref or dx_real!=dx_ref):    
+                    print("\nJoint Name:",joint,\
+                        "\nDelta position:",delta_pos[joint],"Delta Vel:",delta_vel[joint],\
+                        "\t\ntarget pos:",x_ref,"real pos:",x_real,\
+                        "\t\ntarget Velocity:",dx_ref,"\nreal Velocity:",dx_real)
+
+                torque = self.calculateTorque(x_ref, x_real, dx_ref, dx_real, integral, kp, ki, kd)
+                # torque = 0
+                ### ... to here ###
+
+                self.p.setJointMotorControl2(
+                    bodyIndex=self.robot,
+                    jointIndex=self.jointIds[joint],
+                    controlMode=self.p.TORQUE_CONTROL,
+                    force=torque
+                )
+
+                # Gravity compensation
+                # A naive gravitiy compensation is provided for you
+                # If you have embeded a better compensation, feel free to modify
+                compensation = self.jointGravCompensation[joint]
+                self.p.applyExternalForce(
+                    objectUniqueId=self.robot,
+                    linkIndex=self.jointIds[joint],
+                    forceObj=[0, 0, -compensation],
+                    posObj=self.getLinkCoM(joint),
+                    flags=self.p.WORLD_FRAME
+                )
+                # Gravity compensation ends here
 
         self.p.stepSimulation()
         self.drawDebugLines()
         time.sleep(self.dt)
+        return delta_pos,delta_vel
 
     ########## Task 3: Robot Manipulation ##########
     def cubic_interpolation(self, points, nTimes=100):
