@@ -132,8 +132,8 @@ effector1 = "LARM_JOINT5"
 effector2 = "RARM_JOINT5"
 
 # Target = [0.7, 0.00, 0.91]
-Target1 = [-0.2, 0, 0.1]
-Target2 = [0.7, 0, 0.1]
+Target1 = [1, 1, 1]
+Target2 = [0.7, 0, 1]
 threshold = 0.35
 iters = 250
 

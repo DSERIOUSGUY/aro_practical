@@ -614,7 +614,7 @@ class Simulation(Simulation_base):
 
 
 
-            if abs(dist_remaining) > abs(max_possible_distance):
+
 
                 # if test_cntr % 10 == 0:
                 # print("calc vel:", joint_vel, "curr vel:", self.getJointVel(joint))
@@ -624,7 +624,7 @@ class Simulation(Simulation_base):
 
                 # if abs(dist_remaining) > abs(prev_dist_remaining):
                 #     joint_vel = -1*max_vel
-                toy_tick(targetPosition, joint_pos, targetVelocity, joint_vel, 0)
+            toy_tick(targetPosition, joint_pos, targetVelocity, joint_vel, 0)
                 # print("curr vel:",self.getJointVel(joint))
 
 
@@ -666,6 +666,8 @@ class Simulation(Simulation_base):
         # return pltTime, pltDistance
         pass
 
+    prev_joint_pos = {}
+
     def tick(self,targetPos=None,endEffector=None):
         """Ticks one step of simulation using PD control."""
 
@@ -693,7 +695,7 @@ class Simulation(Simulation_base):
 
             
         trajectory = self.inverseKinematics(endEffector,finalTargetPos,0,2,1,0.01)
-        prev_joint_pos = {}
+
         delta_pos = {}
         delta_vel = {}
         step_cntr = 0
@@ -714,9 +716,9 @@ class Simulation(Simulation_base):
                 self.disableVelocityController(joint)
 
                 # loads your PID gains
-                kp = self.ctrlConfig[jointController]['pid']['p']/100
-                ki = self.ctrlConfig[jointController]['pid']['i']/100
-                kd = self.ctrlConfig[jointController]['pid']['d']/100
+                kp = self.ctrlConfig[jointController]['pid']['p']
+                ki = self.ctrlConfig[jointController]['pid']['i']
+                kd = self.ctrlConfig[jointController]['pid']['d']
 
                 ### Implement your code from here ... ###
                 # TODO: obtain torque from PD controller
@@ -727,11 +729,12 @@ class Simulation(Simulation_base):
                 dx_ref = 0
                 integral = 0
 
-                if joint in prev_joint_pos.keys():
-                    dx_real = (x_real - prev_joint_pos[joint])/self.dt
+                if joint in self.prev_joint_pos.keys():
+                    dx_real = (x_real - self.prev_joint_pos[joint])/self.dt
+                    print("##############found joint in self.prev_joint_pos")
                 else:
                     dx_real = 0
-                    prev_joint_pos[joint] = x_real
+                    self.prev_joint_pos[joint] = x_real
                     delta_pos[joint] = np.inf
                     delta_vel[joint] = np.inf
 
