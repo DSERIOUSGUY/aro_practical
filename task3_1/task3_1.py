@@ -85,7 +85,7 @@ def getReadyForTask():
     )
     for _ in range(200):
         print("sending final target:",finalTargetPos)
-        sim.tick(None)
+        sim.tick()
         time.sleep(1./1000)
 
     return tableId, cubeId, targetId
@@ -128,18 +128,29 @@ tableId, cubeId, targetId = getReadyForTask()
 
 # joint = "LARM_JOINT5"
 joint = None
+effector1 = "LARM_JOINT5"
+effector2 = "RARM_JOINT5"
 
 # Target = [0.7, 0.00, 0.91]
-Target = [-0.2, 0, 0.1]
-iters = 1000
+Target1 = [-0.2, 0, 0.1]
+Target2 = [0.7, 0, 0.1]
+threshold = 0.35
+iters = 250
 
 print("Joint in observation:",joint)
-traj = np.linspace([0,0,0],Target,iters)
+traj = np.linspace([0,0,0],Target1,iters)
 delta_pos_plot = []
 delta_vel_plot = []
 delta_coordinate_plot = []
-for i in traj:
-    del_pos, del_vel,del_coo = sim.tick(i)
+for i in range(len(traj)):
+    del_pos, del_vel,del_coo = sim.tick(traj[i],effector1)
+    del_pos, del_vel,del_coo = sim.tick(traj[i],effector2)
+    print("*************delta_coo:",np.linalg.norm(del_coo))
+
+    if np.linalg.norm(del_coo) < threshold:
+        print("CHANGING COURSE")
+        traj = np.linspace([0,0,0],Target2,iters)
+
     delta_pos_plot.append(del_pos)
     delta_vel_plot.append(del_vel)
     delta_coordinate_plot.append(del_coo+[0])

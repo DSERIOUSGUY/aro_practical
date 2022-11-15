@@ -666,7 +666,7 @@ class Simulation(Simulation_base):
         # return pltTime, pltDistance
         pass
 
-    def tick(self,targetPos):
+    def tick(self,targetPos=None,endEffector=None):
         """Ticks one step of simulation using PD control."""
 
         # def inverseKinematics(self, endEffector, targetPosition, orientation, interpolationSteps, maxIterPerStep,
@@ -680,7 +680,9 @@ class Simulation(Simulation_base):
 
         finalTargetPos = targetPos
 
-        endEffector = "LARM_JOINT5"
+        if(endEffector == None):
+            endEffector = "LARM_JOINT5"
+
         print("target found:",finalTargetPos)
 
         try:
