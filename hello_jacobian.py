@@ -66,15 +66,15 @@ j_geo, j_rot = bullet_simulation.calculateJacobian(
     [0.0] * len(mpos),
     [0.0] * len(mpos),
 )
-#print()
+print()
 for col in j_geo:
     print(col)
     pass
-#print()
+print()
 for col in j_rot:
-    #print(col)
+    print(col)
     pass
-#print()
+print()
 
 # print(sim.getTransformationMatrices())
 
