@@ -84,8 +84,6 @@ class Simulation(Simulation_base):
         'LARM_JOINT4', 'LARM_JOINT5', 'RARM_JOINT0', 'RARM_JOINT1', 'RARM_JOINT2', 'RARM_JOINT3', 'RARM_JOINT4',
         'RARM_JOINT5')
 
-
-
     """
     Returns the 3x3 rotation matrix for a joint from the axis-angle representation,
     where the axis is given by the revolution axis of the joint and the angle is theta.
@@ -292,9 +290,14 @@ class Simulation(Simulation_base):
         orient = 0
 
         joint_class = ""
+        aeff = self.getJointOrientation(endEffector)
 
         end_pos, orient = self.getJointLocationAndOrientation(endEffector, q)
         col = np.array([np.cross(self.jointRotationAxis['CHEST_JOINT0'], end_pos - pos)])
+        # orientCol = np.array([np.cross(self.jointRotationAxis['CHEST_JOINT0'], self.jointRotationAxis[endEffector])])
+        # orientCol = np.array([np.cross(self.jointRotationAxis[endEffector], self.jointRotationAxis['CHEST_JOINT0'])])
+        # orientCol = np.array([np.cross(self.jointRotationAxis['CHEST_JOINT0'], aeff)])
+        orientCol = np.array([self.jointRotationAxis['CHEST_JOINT0']])
         tmats = self.getTransformationMatrices()
         for i in tmats.keys():
 
@@ -305,7 +308,14 @@ class Simulation(Simulation_base):
                 pos, orient = self.getJointLocationAndOrientation(i, q)
 
                 col = np.append(col, np.array([np.cross(self.jointRotationAxis[i], end_pos - pos)]), axis=0)
-
+                # orientCol = np.append(orientCol, np.array(
+                #    [np.cross(self.jointRotationAxis[i], self.jointRotationAxis[endEffector])]), axis=0)
+                # orientCol = np.append(orientCol, np.array(
+                #    [np.cross(self.jointRotationAxis[i], aeff)]), axis=0)
+                orientCol = np.append(orientCol, np.array(
+                    [self.jointRotationAxis[i]]), axis=0)
+                # orientCol = np.append(orientCol, np.array(
+                #    [np.cross(self.jointRotationAxis[endEffector], self.jointRotationAxis[i])]), axis=0)
             elif (joint_class == 'base') or (joint_class == 'CHEST') or (joint_class == 'RHAND') or (
                     joint_class == 'LHAND'):
 
@@ -314,8 +324,8 @@ class Simulation(Simulation_base):
             else:
                 # print("appending:", i)
                 col = np.append(col, np.zeros((1, 3)), axis=0)
-
-        return np.array(col.T)
+                orientCol = np.append(orientCol, np.zeros((1, 3)), axis=0)
+        return np.array(col.T), np.array(orientCol.T)
 
     def efForwardKinematics(self, endEffector, q):
 
@@ -415,7 +425,9 @@ class Simulation(Simulation_base):
 
         starting_EFpos, initOrientation = self.getJointLocationAndOrientation(endEffector)
 
+        print("initorientation=", initOrientation)
         intermediate_targets = np.linspace(starting_EFpos, targetPosition, interpolationSteps)
+        intermediate_orientations = np.linspace(initOrientation, orientation, interpolationSteps)
 
         q = np.array([])
         tmats = self.getTransformationMatrices()
@@ -440,14 +452,20 @@ class Simulation(Simulation_base):
             #    break
 
             curr_target = intermediate_targets[i, :]
-
+            curr_target_orientation = intermediate_orientations[i, :]
             for iteration in range(maxIterPerStep):
                 dy = curr_target - self.efForwardKinematics(endEffector, q)[0]
+
                 # EFpos, EForient = self.getJointLocationAndOrientation(endEffector, q)
                 # dy = curr_target - self.getJointPosition(endEffector)
-                J = self.jacobianMatrix(endEffector, q)
+                J, Jo = self.jacobianMatrix(endEffector, q)
                 dq = np.matmul(np.linalg.pinv(J), dy)
 
+                q = q + dq
+                dtheta = (curr_target_orientation - self.getJointLocationAndOrientation(endEffector, q)[1]) @ [1, 0, 0]
+                # print("dtheta", dtheta)
+                J, Jo = self.jacobianMatrix(endEffector, q)
+                dq = np.matmul(np.linalg.pinv(Jo), dtheta)
                 q = q + dq
                 trajectory = np.append(trajectory, np.array([q]), axis=0)
 
@@ -462,7 +480,7 @@ class Simulation(Simulation_base):
                     #       np.linalg.norm(EF_position - curr_target), 'ef_position=', self.getJointPosition(endEffector),
                     #       'config=', q)
                     break
-                else:          
+                else:
                     # print('target number=', i, 'iteration=', iteration, 'target=', curr_target, 'distance to target=',
                     #       np.linalg.norm(EF_position - curr_target), 'ef_position=', self.getJointPosition(endEffector),
                     #       'config=', q)
@@ -615,8 +633,7 @@ class Simulation(Simulation_base):
                 # if abs(dist_remaining) > abs(prev_dist_remaining):
                 #     joint_vel = -1*max_vel
             toy_tick(targetPosition, joint_pos, targetVelocity, joint_vel, 0)
-                # print("curr vel:",self.getJointVel(joint))
-
+            # print("curr vel:",self.getJointVel(joint))
 
             prev_joint_pos = joint_pos
             joint_pos = self.getJointPos(joint)
@@ -679,11 +696,11 @@ class Simulation(Simulation_base):
 
             ### Implement your code from here ... ###
             # TODO: obtain torque from PD controller
-            
+
             x_ref = self.target_pos[joint]
             dx_ref = self.target_vel[joint]
             x_real = self.getJointPos(joint)
-            if not(joint in self.prev_joint_pos.keys()):
+            if not (joint in self.prev_joint_pos.keys()):
                 self.prev_joint_pos[joint] = x_real
             dx_real = (x_real - self.prev_joint_pos[joint]) / self.dt
             self.prev_joint_pos[joint] = x_real
@@ -715,10 +732,9 @@ class Simulation(Simulation_base):
         time.sleep(self.dt)
 
     ########## Task 3: Robot Manipulation ##########
-    
-    
+
     def cubic_interpolation(self, points, nTimes=100):
-        
+
         """
         Given a set of control points, return the
         cubic spline defined by the control points,
@@ -729,57 +745,56 @@ class Simulation(Simulation_base):
         # Return 'nTimes' points per dimension in 'points' (typically a 2xN array),
         # sampled from a cubic spline defined by 'points' and a boundary condition.
         # You may use methods found in scipy.interpolate
-        
+
         from scipy.interpolate import interp1d
-        
+
         x = []
         y = []
 
         for i in range(len(points)):
             x.append(points[i][0])
             y.append(points[i][1])
-        
-        f = interp1d(x,y,kind='cubic')
+
+        f = interp1d(x, y, kind='cubic')
 
         points = f
-        #reset
+        # reset
         x = []
         y = []
 
         print("adjusting spline")
-        while(sp_len != nTimes):
+        while (sp_len != nTimes):
             sp_len_ind = (nTimes / sp_len) - 1
             sp_len = len(points)
 
-            if(sp_len_ind < 0):
-                #per point, get the length(i.e no. of points) to generate between them
-                #spline oversized, needs cutting down
-                #spline to be cut down by a factor of: spline length / nTimes
+            if (sp_len_ind < 0):
+                # per point, get the length(i.e no. of points) to generate between them
+                # spline oversized, needs cutting down
+                # spline to be cut down by a factor of: spline length / nTimes
                 #                                      i.e, every   (spline length / nTimes)th point will be removed
                 #                                      if cut too short, use linspace to fill it.
-                sp_len_ind = 1/sp_len_ind
+                sp_len_ind = 1 / sp_len_ind
                 for i in range(sp_len):
-                    if(i%sp_len_ind==0):
+                    if (i % sp_len_ind == 0):
                         points.pop(i)
             else:
-                #spline needs to be elongated
-                if(sp_len_ind<1):
-                    sp_len_ind = round(sp_len_ind,0)
+                # spline needs to be elongated
+                if (sp_len_ind < 1):
+                    sp_len_ind = round(sp_len_ind, 0)
                 sp_len_ind = int(sp_len_ind)
                 for i in range(sp_len):
 
-                    if(i<(sp_len-1)):
-                        #+2 is added to account for current and final point in the resultant array
-                        int_pt = np.linspace(points[i],points[i+1],sp_len_ind+2)
+                    if (i < (sp_len - 1)):
+                        # +2 is added to account for current and final point in the resultant array
+                        int_pt = np.linspace(points[i], points[i + 1], sp_len_ind + 2)
 
-                        #will always have starting and ending point
-                        #-1 accounts for not appending the ending point
-                        for j in range(len(int_pt)-1):
+                        # will always have starting and ending point
+                        # -1 accounts for not appending the ending point
+                        for j in range(len(int_pt) - 1):
                             x.append(int_pt[j][0])
                             y.append(int_pt[j][0])
-                    
-            sp_len = len(points)
 
+            sp_len = len(points)
 
         # return xpoints, ypoints
         pass
@@ -790,8 +805,6 @@ class Simulation(Simulation_base):
         """A template function for you, you are free to use anything else"""
         # TODO: Append your code here
         # call IK solver with
-
-
 
         # joint_pos = self.getJointPos(joint)
         # prev_joint_pos = self.getJointPos(joint)
@@ -845,7 +858,6 @@ class Simulation(Simulation_base):
         #     toy_tick(targetPosition, joint_pos, targetVelocity, joint_vel, 0)
         #         # print("curr vel:",self.getJointVel(joint))
 
-
         #     prev_joint_pos = joint_pos
         #     joint_pos = self.getJointPos(joint)
         #     joint_vel = (joint_pos - prev_joint_pos) / self.dt
@@ -861,7 +873,6 @@ class Simulation(Simulation_base):
         #     if test_cntr % 10 == 0:
         #         print("DEBUG: Distance remaining:", dist_remaining, "\n joint_vel:", joint_vel)
         #         print("\n---------------\n")
-
 
         pass
 

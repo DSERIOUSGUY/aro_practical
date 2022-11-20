@@ -79,11 +79,11 @@ print()
 # print(sim.getTransformationMatrices())
 
 targetPosition = np.array([0.37, 0.23, 1.06385])
-sim.move_without_PD('LARM_JOINT5', targetPosition)
+#sim.move_without_PD('LARM_JOINT5', targetPosition)
 
+print("jaco= ", sim.jacobianMatrix("LARM_JOINT5"))
 
-
-
+print("orient=", sim.getJointOrientation('LARM_JOINT5'))
 
 try:
     time.sleep(float(sys.argv[1]))
