@@ -84,13 +84,31 @@ def getReadyForTask():
     )
     for _ in range(200):
         sim.tick()
-        time.sleep(1./1000)
+        # time.sleep(1./1000)
 
     return tableId, cubeId, targetId
 
 
 def solution():
-    # TODO: Add your code here
+
+    task2_jointName = "LARM_JOINT2"
+    task2_targetPosition = np.deg2rad(-45)  # joint (angular) position in radians
+    task2_targetVelocity = 0.0  # joint (angular) velocity in radians per second
+    verbose = False
+    task2_figure_name = "task2_PD_response.png"
+    task2_savefig = False
+
+    pltTime, pltTarget, pltTorque, pltTorqueTime, pltPosition, pltVelocity = sim.moveJoint(task2_jointName, task2_targetPosition, task2_targetVelocity, verbose)
+
+    task2_jointName = "RARM_JOINT2"
+    task2_targetPosition = np.deg2rad(-45)  # joint (angular) position in radians
+    task2_targetVelocity = 0.0  # joint (angular) velocity in radians per second
+    verbose = False
+    task2_figure_name = "task2_PD_response.png"
+    task2_savefig = False
+
+    pltTime, pltTarget, pltTorque, pltTorqueTime, pltPosition, pltVelocity = sim.moveJoint(task2_jointName, task2_targetPosition, task2_targetVelocity, verbose)
+
     pass
 
 tableId, cubeId, targetId = getReadyForTask()

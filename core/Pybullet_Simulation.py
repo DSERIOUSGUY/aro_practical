@@ -565,15 +565,6 @@ class Simulation(Simulation_base):
             self.p.stepSimulation()
             time.sleep(self.dt)
 
-        def calculate_accn(finalVel, initVel, dt):
-            accn = (finalVel - initVel) / dt
-            return accn
-
-        def calculate_dist(finalVel, initVel, dt):
-            a = calculate_accn(finalVel, initVel, dt)
-            d = (finalVel ** 2 - initVel ** 2) / (2 * a)
-            return d
-
         targetPosition, targetVelocity = float(targetPosition), float(targetVelocity)
 
         # disable joint velocity controller before apply a torque
@@ -611,10 +602,6 @@ class Simulation(Simulation_base):
                 test_cntr += 1
                 if test_cntr % test_iters == 0:
                     break
-
-
-
-
 
                 # if test_cntr % 10 == 0:
                 # print("calc vel:", joint_vel, "curr vel:", self.getJointVel(joint))
@@ -667,135 +654,129 @@ class Simulation(Simulation_base):
         pass
 
     prev_joint_pos = {}
+    target_pos = {}
+    target_vel = {}
 
-    def tick(self,targetPos=None,endEffector=None):
+    def tick(self):
         """Ticks one step of simulation using PD control."""
-
-        # def inverseKinematics(self, endEffector, targetPosition, orientation, interpolationSteps, maxIterPerStep,
-        #     threshold):
-
-        #get robot config from IK for a given end effector position
-        #iterate through all joints and apply the given configurations
-        # global finalTargetPos
-
-        # finalTargetPos[2] -= 0.85
-
-        finalTargetPos = targetPos
-
-        if(endEffector == None):
-            endEffector = "LARM_JOINT5"
-
-        print("target found:",finalTargetPos)
-
-        try:
-            if(targetPos == None):
-                finalTargetPos = self.getJointLocationAndOrientation(endEffector)[0]
-        except Exception as e:
-            print("error while parsing target location, no movement\n")
-
-            
-        trajectory = self.inverseKinematics(endEffector,finalTargetPos,0,2,1,0.01)
-
-        delta_pos = {}
-        delta_vel = {}
-        step_cntr = 0
-
         # Iterate through all joints and update joint states using PD control.
-        for curr_config in trajectory:
+        for joint in self.joints:
+            # skip dummy joints (world to base joint)
+            jointController = self.jointControllers[joint]
+            if jointController == 'SKIP_THIS_JOINT':
+                continue
 
-            print("\n\nSTEP:",step_cntr,"-------------------------------------------------------------------------------------\n")
-            step_cntr += 1
+            # disable joint velocity controller before apply a torque
+            self.disableVelocityController(joint)
 
-            for joint in self.joints:
-                # skip dummy joints (world to base joint)
-                jointController = self.jointControllers[joint]
-                if jointController == 'SKIP_THIS_JOINT':
-                    continue
+            # loads your PID gains
+            kp = self.ctrlConfig[jointController]['pid']['p']
+            ki = self.ctrlConfig[jointController]['pid']['i']
+            kd = self.ctrlConfig[jointController]['pid']['d']
 
-                # disable joint velocity controller before apply a torque
-                self.disableVelocityController(joint)
+            ### Implement your code from here ... ###
+            # TODO: obtain torque from PD controller
+            
+            x_ref = self.target_pos[joint]
+            dx_ref = self.target_vel[joint]
+            x_real = self.getJointPos(joint)
+            if not(joint in self.prev_joint_pos.keys()):
+                self.prev_joint_pos[joint] = x_real
+            dx_real = (x_real - self.prev_joint_pos[joint]) / self.dt
+            
+            torque = self.calculateTorque(self, x_ref, x_real, dx_ref, dx_real, 0, kp, ki, kd)
+            ### ... to here ###
 
-                # loads your PID gains
-                kp = self.ctrlConfig[jointController]['pid']['p']
-                ki = self.ctrlConfig[jointController]['pid']['i']
-                kd = self.ctrlConfig[jointController]['pid']['d']
+            self.p.setJointMotorControl2(
+                bodyIndex=self.robot,
+                jointIndex=self.jointIds[joint],
+                controlMode=self.p.TORQUE_CONTROL,
+                force=torque
+            )
 
-                ### Implement your code from here ... ###
-                # TODO: obtain torque from PD controller
-
-                
-                x_ref = curr_config[self.jointList.index(joint)]
-                x_real = self.getJointPos(joint)
-                dx_ref = 0
-                integral = 0
-
-                if joint in self.prev_joint_pos.keys():
-                    dx_real = (x_real - self.prev_joint_pos[joint])/self.dt
-                    print("##############found joint in self.prev_joint_pos")
-                else:
-                    dx_real = 0
-                    self.prev_joint_pos[joint] = x_real
-                    delta_pos[joint] = np.inf
-                    delta_vel[joint] = np.inf
-
-                delta_pos[joint] = x_ref - x_real
-                delta_vel[joint] = dx_ref - dx_real
-
-                if(x_real!=x_ref or dx_real!=dx_ref or joint==endEffector):    
-                    print("\nJoint Name:",joint,\
-                        "\nDelta position:",delta_pos[joint],"Delta Vel:",delta_vel[joint],\
-                        "\t\ntarget pos:",x_ref,"real pos:",x_real,\
-                        "\t\ntarget Velocity:",dx_ref,"\nreal Velocity:",dx_real)
-
-                torque = self.calculateTorque(x_ref, x_real, dx_ref, dx_real, integral, kp, ki, kd)
-                # torque = 0
-                ### ... to here ###
-
-                self.p.setJointMotorControl2(
-                    bodyIndex=self.robot,
-                    jointIndex=self.jointIds[joint],
-                    controlMode=self.p.TORQUE_CONTROL,
-                    force=torque
-                )
-
-                # Gravity compensation
-                # A naive gravitiy compensation is provided for you
-                # If you have embeded a better compensation, feel free to modify
-                compensation = self.jointGravCompensation[joint]
-                self.p.applyExternalForce(
-                    objectUniqueId=self.robot,
-                    linkIndex=self.jointIds[joint],
-                    forceObj=[0, 0, -compensation],
-                    posObj=self.getLinkCoM(joint),
-                    flags=self.p.WORLD_FRAME
-                )
-                # Gravity compensation ends here
-
-
-        endEffectorPos = self.getJointLocationAndOrientation(endEffector)[0]
-        delta_coordinate = []
-        for i in range(len(finalTargetPos)):
-            delta_coordinate.append(finalTargetPos[i]-endEffectorPos[i])
-
+            # Gravity compensation
+            # A naive gravitiy compensation is provided for you
+            # If you have embeded a better compensation, feel free to modify
+            compensation = self.jointGravCompensation[joint]
+            self.p.applyExternalForce(
+                objectUniqueId=self.robot,
+                linkIndex=self.jointIds[joint],
+                forceObj=[0, 0, -compensation],
+                posObj=self.getLinkCoM(joint),
+                flags=self.p.WORLD_FRAME
+            )
+            # Gravity compensation ends here
 
         self.p.stepSimulation()
         self.drawDebugLines()
         time.sleep(self.dt)
 
-
-        return delta_pos,delta_vel,delta_coordinate
-
     ########## Task 3: Robot Manipulation ##########
+    
+    
     def cubic_interpolation(self, points, nTimes=100):
+        
         """
         Given a set of control points, return the
         cubic spline defined by the control points,
         sampled nTimes along the curve.
         """
+
         # TODO add your code here
         # Return 'nTimes' points per dimension in 'points' (typically a 2xN array),
         # sampled from a cubic spline defined by 'points' and a boundary condition.
         # You may use methods found in scipy.interpolate
+        
+        from scipy.interpolate import interp1d
+        
+        x = []
+        y = []
+
+        for i in range(len(points)):
+            x.append(points[i][0])
+            y.append(points[i][1])
+        
+        f = interp1d(x,y,kind='cubic')
+
+        points = f
+        #reset
+        x = []
+        y = []
+
+        print("adjusting spline")
+        while(sp_len != nTimes):
+            sp_len_ind = (nTimes / sp_len) - 1
+            sp_len = len(points)
+
+            if(sp_len_ind < 0):
+                #per point, get the length(i.e no. of points) to generate between them
+                #spline oversized, needs cutting down
+                #spline to be cut down by a factor of: spline length / nTimes
+                #                                      i.e, every   (spline length / nTimes)th point will be removed
+                #                                      if cut too short, use linspace to fill it.
+                sp_len_ind = 1/sp_len_ind
+                for i in range(sp_len):
+                    if(i%sp_len_ind==0):
+                        points.pop(i)
+            else:
+                #spline needs to be elongated
+                if(sp_len_ind<1):
+                    sp_len_ind = round(sp_len_ind,0)
+                sp_len_ind = int(sp_len_ind)
+                for i in range(sp_len):
+
+                    if(i<(sp_len-1)):
+                        #+2 is added to account for current and final point in the resultant array
+                        int_pt = np.linspace(points[i],points[i+1],sp_len_ind+2)
+
+                        #will always have starting and ending point
+                        #-1 accounts for not appending the ending point
+                        for j in range(len(int_pt)-1):
+                            x.append(int_pt[j][0])
+                            y.append(int_pt[j][0])
+                    
+            sp_len = len(points)
+
 
         # return xpoints, ypoints
         pass
@@ -805,6 +786,80 @@ class Simulation(Simulation_base):
                           threshold=1e-1, maxIter=300, verbose=False):
         """A template function for you, you are free to use anything else"""
         # TODO: Append your code here
+
+
+
+
+        # joint_pos = self.getJointPos(joint)
+        # prev_joint_pos = self.getJointPos(joint)
+
+        # max_possible_distance = max_vel * self.dt
+        # dist = targetPosition - joint_pos
+        # dist_remaining = dist
+
+        # joint_vel = (joint_pos - prev_joint_pos) / self.dt
+
+        # # test params
+        # test_cntr = 0
+        # testing = 0
+        # test_iters = 101
+        # threshold = 0.035
+
+        # max_vel = 3  # 3m/s
+
+        # joint_pos = self.getJointPos(joint)
+        # prev_joint_pos = self.getJointPos(joint)
+
+        # max_possible_distance = max_vel * self.dt
+        # dist = targetPosition - joint_pos
+        # dist_remaining = dist
+
+        # joint_vel = (joint_pos - prev_joint_pos) / self.dt
+
+        # # test params
+        # test_cntr = 0
+        # testing = 0
+        # test_iters = 101
+        # threshold = 0.035
+
+        # print("max possible distance: ", max_possible_distance, "total distance to cover:", dist_remaining)
+        # print("\n---------------\n")
+
+        # while abs(dist_remaining) > abs(threshold) or abs(joint_vel - targetVelocity) > abs(threshold):
+        #     if testing == 1:
+        #         test_cntr += 1
+        #         if test_cntr % test_iters == 0:
+        #             break
+
+        #         # if test_cntr % 10 == 0:
+        #         # print("calc vel:", joint_vel, "curr vel:", self.getJointVel(joint))
+        #         # print("JOINT:", joint)
+        #         # print("Target:", targetPosition, "\n Joint pos:", joint_pos, "\n Target vel:", max_vel,
+        #         #      "\n Current vel", joint_vel)
+
+        #         # if abs(dist_remaining) > abs(prev_dist_remaining):
+        #         #     joint_vel = -1*max_vel
+        #     toy_tick(targetPosition, joint_pos, targetVelocity, joint_vel, 0)
+        #         # print("curr vel:",self.getJointVel(joint))
+
+
+        #     prev_joint_pos = joint_pos
+        #     joint_pos = self.getJointPos(joint)
+        #     joint_vel = (joint_pos - prev_joint_pos) / self.dt
+
+        #     dist_remaining = targetPosition - joint_pos
+
+        #     pltTime.append(time.time())
+        #     pltPosition.append(joint_pos)
+        #     pltVelocity.append(joint_vel)
+        #     pltTarget.append(targetPosition)
+        #     pltTorqueTime.append(time.time())
+
+        #     if test_cntr % 10 == 0:
+        #         print("DEBUG: Distance remaining:", dist_remaining, "\n joint_vel:", joint_vel)
+        #         print("\n---------------\n")
+
+
         pass
 
     # Task 3.2 Grasping & Docking
