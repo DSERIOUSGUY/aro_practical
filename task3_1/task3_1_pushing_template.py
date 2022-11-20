@@ -46,6 +46,7 @@ robotConfigs = {
 
 sim = Simulation(pybulletConfigs, robotConfigs)
 
+
 ##### Please leave this function unchanged, feel free to modify others #####
 def getReadyForTask():
     global finalTargetPos
@@ -53,45 +54,66 @@ def getReadyForTask():
     finalTargetPos = np.array([0.7, 0.00, 0.91])
     urdf_compiler_path = core_path + "/urdf_compiler.py"
     subprocess.call([urdf_compiler_path,
-                     "-o", abs_path+"/lib/task_urdfs/task3_1_target_compiled.urdf",
-                     abs_path+"/lib/task_urdfs/task3_1_target.urdf"])
+                     "-o", abs_path + "/lib/task_urdfs/task3_1_target_compiled.urdf",
+                     abs_path + "/lib/task_urdfs/task3_1_target.urdf"])
 
     sim.p.resetJointState(bodyUniqueId=1, jointIndex=12, targetValue=-0.4)
     sim.p.resetJointState(bodyUniqueId=1, jointIndex=6, targetValue=-0.4)
     # load the table in front of the robot
     tableId = sim.p.loadURDF(
-        fileName            = abs_path+"/lib/task_urdfs/table/table_taller.urdf",
-        basePosition        = [0.8, 0, 0],
-        baseOrientation     = sim.p.getQuaternionFromEuler([0, 0, math.pi/2]),
-        useFixedBase        = True,
-        globalScaling       = 1.4
+        fileName=abs_path + "/lib/task_urdfs/table/table_taller.urdf",
+        basePosition=[0.8, 0, 0],
+        baseOrientation=sim.p.getQuaternionFromEuler([0, 0, math.pi / 2]),
+        useFixedBase=True,
+        globalScaling=1.4
     )
     cubeId = sim.p.loadURDF(
-        fileName            = abs_path+"/lib/task_urdfs/cubes/cube_small.urdf",
-        basePosition        = [0.33, 0, 1.0],
-        baseOrientation     = sim.p.getQuaternionFromEuler([0, 0, 0]),
-        useFixedBase        = False,
-        globalScaling       = 1.4
+        fileName=abs_path + "/lib/task_urdfs/cubes/cube_small.urdf",
+        basePosition=[0.33, 0, 1.0],
+        baseOrientation=sim.p.getQuaternionFromEuler([0, 0, 0]),
+        useFixedBase=False,
+        globalScaling=1.4
     )
     sim.p.resetVisualShapeData(cubeId, -1, rgbaColor=[1, 1, 0, 1])
 
     targetId = sim.p.loadURDF(
-        fileName            = abs_path+"/lib/task_urdfs/task3_1_target_compiled.urdf",
-        basePosition        = finalTargetPos,
-        baseOrientation     = sim.p.getQuaternionFromEuler([0, 0, math.pi]),
-        useFixedBase        = True,
-        globalScaling       = 1
+        fileName=abs_path + "/lib/task_urdfs/task3_1_target_compiled.urdf",
+        basePosition=finalTargetPos,
+        baseOrientation=sim.p.getQuaternionFromEuler([0, 0, math.pi]),
+        useFixedBase=True,
+        globalScaling=1
     )
     for _ in range(200):
         sim.tick()
-        time.sleep(1./1000)
+        time.sleep(1. / 1000)
 
     return tableId, cubeId, targetId
 
 
 def solution():
-    # TODO: Add your code here
-    pass
+
+    goals = [[0.15, -0.15, 0.15], [0.15, 0.025, 0.15], [0.65, 0.02, 0.2]]
+    threshold = 0.35
+    for k in goals:
+        target = sim.inverseKinematics('RARM_JOINT5', k, None, 50, 10, 1e-3)
+        #print("target= ", target)
+        for j in target:
+            for idi, i in enumerate(sim.jointList):
+                sim.target_pos[i] = j[idi]
+                sim.target_vel[i] = 1
+            for joint in sim.jointList:
+                q = np.array([])
+                q = np.append(q, np.array([sim.getJointPos(joint)]), axis=0)
+                print(q)
+            while np.amax(np.absolute(q - j)) > threshold:
+
+                sim.tick()
+                q = np.array([])
+                for joint in sim.jointList:
+                    q = np.append(q, np.array([sim.getJointPos(joint)]), axis=0)
+                    print(q)
+
+
 
 tableId, cubeId, targetId = getReadyForTask()
 solution()

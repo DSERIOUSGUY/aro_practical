@@ -27,6 +27,9 @@ class Simulation(Simulation_base):
             self.refVector = np.array(refVect)
         else:
             self.refVector = np.array([1, 0, 0])
+        for idi, i in enumerate(self.jointList):
+            self.target_pos[i] = 0
+            self.target_vel[i] = 0
 
     ########## Task 1: Kinematics ##########
     # Task 1.1 Forward Kinematics
@@ -683,8 +686,8 @@ class Simulation(Simulation_base):
             if not(joint in self.prev_joint_pos.keys()):
                 self.prev_joint_pos[joint] = x_real
             dx_real = (x_real - self.prev_joint_pos[joint]) / self.dt
-            
-            torque = self.calculateTorque(self, x_ref, x_real, dx_ref, dx_real, 0, kp, ki, kd)
+            self.prev_joint_pos[joint] = x_real
+            torque = self.calculateTorque(x_ref, x_real, dx_ref, dx_real, 0, kp, ki, kd)
             ### ... to here ###
 
             self.p.setJointMotorControl2(
@@ -782,11 +785,11 @@ class Simulation(Simulation_base):
         pass
 
     # Task 3.1 Pushing
-    def dockingToPosition(self, leftTargetAngle, rightTargetAngle, angularSpeed=0.005,
+    def dockingToPosition(self, leftTargetAngle=None, rightTargetAngle=None, angularSpeed=0.005,
                           threshold=1e-1, maxIter=300, verbose=False):
         """A template function for you, you are free to use anything else"""
         # TODO: Append your code here
-
+        # call IK solver with
 
 
 
