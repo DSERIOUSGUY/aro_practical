@@ -93,7 +93,7 @@ def getReadyForTask():
 def solution():
     goals = [[0.4, -0.1, 0.15], [0.2, -0.10, 0.15], [0.2, 0.02, 0.15], [0.2, 0.0, 0.15], [0.4, 0.0, 0.09], [0.60, 0.0, 0.09]]
     threshold = 0.1
-    goalOrient = [1, 0, 0]
+    goalOrient = [1, 0, 0] 
     for k in goals:
         target = sim.inverseKinematics('RARM_JOINT5', k, goalOrient
                                        , 10, 100, 1e-3)
@@ -102,7 +102,7 @@ def solution():
             print("subtarget= ", sim.efForwardKinematics('RARM_JOINT5', j)[0])
             for idi, i in enumerate(sim.jointList):
                 sim.target_pos[i] = j[idi]
-                sim.target_vel[i] = 0.0001
+                sim.target_vel[i] = 0.001
             q = np.array([])
             for joint in sim.jointList:
 
