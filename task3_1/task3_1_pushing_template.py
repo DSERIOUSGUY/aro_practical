@@ -91,8 +91,8 @@ def getReadyForTask():
 
 
 def solution():
-    goals = [[0.15, -0.15, 0.15], [0.15, 0.025, 0.15], [0.65, 0.02, 0.2]]
-    threshold = 0.35
+    goals = [[0.4, -0.1, 0.25], [0.25, -0.10, 0.25], [0.2, 0.0, 0.15], [0.2, 0.02, 0.15],  [0.65, 0.02, 0.15]]
+    threshold = 0.1
     goalOrient = sim.getJointLocationAndOrientation('RARM_JOINT5')[1]
     for k in goals:
         target = sim.inverseKinematics('RARM_JOINT5', k, goalOrient
@@ -101,13 +101,12 @@ def solution():
         for j in target:
             for idi, i in enumerate(sim.jointList):
                 sim.target_pos[i] = j[idi]
-                sim.target_vel[i] = 1
+                sim.target_vel[i] = 0.005
             for joint in sim.jointList:
                 q = np.array([])
                 q = np.append(q, np.array([sim.getJointPos(joint)]), axis=0)
                 # print(q)
             while np.amax(np.absolute(q - j)) > threshold:
-
                 sim.tick()
                 q = np.array([])
                 for joint in sim.jointList:

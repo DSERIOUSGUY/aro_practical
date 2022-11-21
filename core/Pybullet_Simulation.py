@@ -460,8 +460,9 @@ class Simulation(Simulation_base):
                 # dy = curr_target - self.getJointPosition(endEffector)
                 J, Jo = self.jacobianMatrix(endEffector, q)
                 dq = np.matmul(np.linalg.pinv(J), dy)
-
                 q = q + dq
+                # trajectory = np.append(trajectory, np.array([q]), axis=0)
+
                 dtheta = (curr_target_orientation - self.getJointLocationAndOrientation(endEffector, q)[1]) @ [1, 0, 0]
                 # print("dtheta", dtheta)
                 J, Jo = self.jacobianMatrix(endEffector, q)
