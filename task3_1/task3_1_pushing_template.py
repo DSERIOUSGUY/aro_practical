@@ -91,27 +91,43 @@ def getReadyForTask():
 
 
 def solution():
-    goals = [[0.4, -0.1, 0.25], [0.25, -0.10, 0.25], [0.2, 0.0, 0.15], [0.2, 0.02, 0.15],  [0.65, 0.02, 0.15]]
-    threshold = 0.1
-    goalOrient = sim.getJointLocationAndOrientation('RARM_JOINT5')[1]
+    goals = [[0.4, -0.1, 0.15], [0.2, -0.10, 0.15], [0.2, 0.05, 0.15], [0.2, 0.05, 0.15], [0.65, 0.0, 0.15]]
+    threshold = 0.035
+    goalOrient = [1, 0, 0]
     for k in goals:
         target = sim.inverseKinematics('RARM_JOINT5', k, goalOrient
-                                       , 50, 10, 1e-3)
-        # print("target= ", target)
+                                       , 10, 100, 1e-3)
+        print("target= ", k)
         for j in target:
+            print("subtarget= ", sim.efForwardKinematics('RARM_JOINT5', j)[0])
             for idi, i in enumerate(sim.jointList):
                 sim.target_pos[i] = j[idi]
-                sim.target_vel[i] = 0.005
+                sim.target_vel[i] = 0
+            q = np.array([])
             for joint in sim.jointList:
-                q = np.array([])
+
                 q = np.append(q, np.array([sim.getJointPos(joint)]), axis=0)
                 # print(q)
+            counter = 0
             while np.amax(np.absolute(q - j)) > threshold:
+                # while np.linalg.norm(
+                #        sim.efForwardKinematics('RARM_JOINT5', q)[0] - sim.efForwardKinematics('RARM_JOINT5', j)[
+                #            0]) > threshold:
                 sim.tick()
                 q = np.array([])
                 for joint in sim.jointList:
                     q = np.append(q, np.array([sim.getJointPos(joint)]), axis=0)
                     # print(q)
+                counter += 1
+                if counter >= 2000:
+                    print("____NOT REACHED_____", "position=", sim.getJointPosition('RARM_JOINT5'))
+                    print(list(sim.target_pos.values())-q)
+
+                    break
+            print("subtarget reached=", sim.getJointPosition('RARM_JOINT5'), "orientation=",
+                  sim.getJointOrientation('RARM_JOINT5'))
+        print("target reached=", k, "position=", sim.getJointPosition('RARM_JOINT5'), "orientation=",
+              sim.getJointOrientation('RARM_JOINT5'))
 
 
 tableId, cubeId, targetId = getReadyForTask()

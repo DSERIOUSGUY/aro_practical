@@ -296,8 +296,8 @@ class Simulation(Simulation_base):
         col = np.array([np.cross(self.jointRotationAxis['CHEST_JOINT0'], end_pos - pos)])
         # orientCol = np.array([np.cross(self.jointRotationAxis['CHEST_JOINT0'], self.jointRotationAxis[endEffector])])
         # orientCol = np.array([np.cross(self.jointRotationAxis[endEffector], self.jointRotationAxis['CHEST_JOINT0'])])
-        # orientCol = np.array([np.cross(self.jointRotationAxis['CHEST_JOINT0'], aeff)])
-        orientCol = np.array([self.jointRotationAxis['CHEST_JOINT0']])
+        orientCol = np.array([np.cross(self.jointRotationAxis['CHEST_JOINT0'], aeff)])
+        # orientCol = np.array([self.jointRotationAxis['CHEST_JOINT0']])
         tmats = self.getTransformationMatrices()
         for i in tmats.keys():
 
@@ -310,10 +310,10 @@ class Simulation(Simulation_base):
                 col = np.append(col, np.array([np.cross(self.jointRotationAxis[i], end_pos - pos)]), axis=0)
                 # orientCol = np.append(orientCol, np.array(
                 #    [np.cross(self.jointRotationAxis[i], self.jointRotationAxis[endEffector])]), axis=0)
-                # orientCol = np.append(orientCol, np.array(
-                #    [np.cross(self.jointRotationAxis[i], aeff)]), axis=0)
                 orientCol = np.append(orientCol, np.array(
-                    [self.jointRotationAxis[i]]), axis=0)
+                    [np.cross(self.jointRotationAxis[i], aeff)]), axis=0)
+                # orientCol = np.append(orientCol, np.array(
+                #    [self.jointRotationAxis[i]]), axis=0)
                 # orientCol = np.append(orientCol, np.array(
                 #    [np.cross(self.jointRotationAxis[endEffector], self.jointRotationAxis[i])]), axis=0)
             elif (joint_class == 'base') or (joint_class == 'CHEST') or (joint_class == 'RHAND') or (
@@ -325,7 +325,7 @@ class Simulation(Simulation_base):
                 # print("appending:", i)
                 col = np.append(col, np.zeros((1, 3)), axis=0)
                 orientCol = np.append(orientCol, np.zeros((1, 3)), axis=0)
-        return np.array(col.T), np.array(orientCol.T)
+        return np.vstack((col.T, orientCol.T))
 
     def efForwardKinematics(self, endEffector, q):
 
@@ -425,9 +425,9 @@ class Simulation(Simulation_base):
 
         starting_EFpos, initOrientation = self.getJointLocationAndOrientation(endEffector)
 
-        print("initorientation=", initOrientation)
+        # print("initorientation=", initOrientation @ [1, 0, 0])
         intermediate_targets = np.linspace(starting_EFpos, targetPosition, interpolationSteps)
-        intermediate_orientations = np.linspace(initOrientation, orientation, interpolationSteps)
+        intermediate_orientations = np.linspace(initOrientation @ [1, 0, 0], orientation, interpolationSteps)
 
         q = np.array([])
         tmats = self.getTransformationMatrices()
@@ -455,19 +455,19 @@ class Simulation(Simulation_base):
             curr_target_orientation = intermediate_orientations[i, :]
             for iteration in range(maxIterPerStep):
                 dy = curr_target - self.efForwardKinematics(endEffector, q)[0]
-
+                dtheta = (curr_target_orientation - (self.getJointLocationAndOrientation(endEffector, q)[1] @ [1, 0, 0]))
+                dy = np.hstack((dy, dtheta))
                 # EFpos, EForient = self.getJointLocationAndOrientation(endEffector, q)
                 # dy = curr_target - self.getJointPosition(endEffector)
-                J, Jo = self.jacobianMatrix(endEffector, q)
+                J = self.jacobianMatrix(endEffector, q)
                 dq = np.matmul(np.linalg.pinv(J), dy)
                 q = q + dq
                 # trajectory = np.append(trajectory, np.array([q]), axis=0)
 
-                dtheta = (curr_target_orientation - self.getJointLocationAndOrientation(endEffector, q)[1]) @ [1, 0, 0]
                 # print("dtheta", dtheta)
-                J, Jo = self.jacobianMatrix(endEffector, q)
-                dq = np.matmul(np.linalg.pinv(Jo), dtheta)
-                q = q + dq
+                # J, Jo = self.jacobianMatrix(endEffector, q)
+                # dq = np.matmul(np.linalg.pinv(Jo), dtheta)
+                # q = q + dq
                 trajectory = np.append(trajectory, np.array([q]), axis=0)
 
                 # TODO: move this part to move without pd
