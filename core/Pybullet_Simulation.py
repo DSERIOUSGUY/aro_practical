@@ -423,6 +423,7 @@ class Simulation(Simulation_base):
 
         # inits
 
+    
         starting_EFpos, initOrientation = self.getJointLocationAndOrientation(endEffector)
 
         # print("initorientation=", initOrientation @ [1, 0, 0])

@@ -102,7 +102,7 @@ def solution():
             print("subtarget= ", sim.efForwardKinematics('RARM_JOINT5', j)[0])
             for idi, i in enumerate(sim.jointList):
                 sim.target_pos[i] = j[idi]
-                sim.target_vel[i] = 0.001
+                sim.target_vel[i] = 0.05
             q = np.array([])
             for joint in sim.jointList:
 
