@@ -109,15 +109,15 @@ def solution():
         targetL = sim.inverseKinematics('LHAND', k, goalOrient
                                         , 10, 1, 1e-3)
         k[1] -= 0.2
-        #targetR = sim.inverseKinematics('RHAND', k, [0, 1, 0]
-        #                                , 10, 1, 1e-3)
-        targetR = []
+        targetR = sim.inverseKinematics('RHAND', k, [0, 1, 0]
+                                       , 10, 1, 1e-3)
+
         for l in range(len(targetL)):
-            for m in range(15):
-                if (sim.jointRotationAxis[sim.jointList[m]] == np.array([0, 0, 1])).all():
-                    targetR[l][m] = -1 * targetL[l][m]
+            for m in range(3,9):
+                if sim.jointRotationAxis[sim.jointList[m]] @ np.array([0, 0, 1]) == 1:
+                    targetR[l][6+m] = -1 * targetL[l][m]
                 else:
-                    targetR[l][m] = targetL[l][m]
+                    targetR[l][6+m] = targetL[l][m]
         target = np.array([targetL[0]])
         for i in range(len(targetL)):
             target = np.append(target, np.array([np.hstack((targetL[i][0:9], targetR[i][9:15]))]), axis=0)
