@@ -102,7 +102,7 @@ def getReadyForTask():
 
 def solution():
     # TODO: Add your code here
-    goals = [[0.45, 0.10, 0.25], [0.45, 0.10, 0.25], [0.4, 0.10, 0.30]]
+    goals = [[0.45, 0.15, 0.20], [0.45, 0.05, 0.27], [0.4, 0.15, 0.51]]
     threshold = 0.1
     goalOrient = [0, -1, 0]
     for k in goals:
@@ -110,14 +110,14 @@ def solution():
                                         , 10, 1, 1e-3)
         k[1] -= 0.2
         targetR = sim.inverseKinematics('RHAND', k, [0, 1, 0]
-                                       , 10, 1, 1e-3)
+                                        , 10, 1, 1e-3)
 
         for l in range(len(targetL)):
-            for m in range(3,9):
-                if sim.jointRotationAxis[sim.jointList[m]] @ np.array([0, 0, 1]) == 1:
-                    targetR[l][6+m] = -1 * targetL[l][m]
+            for m in range(3, 9):
+                if (sim.jointRotationAxis[sim.jointList[m]] @ np.array([0, 0, 1]) == 1) or sim.jointRotationAxis[sim.jointList[m]] @ np.array([1, 0, 0]) == 1:
+                    targetR[l][6 + m] = -1 * targetL[l][m]
                 else:
-                    targetR[l][6+m] = targetL[l][m]
+                    targetR[l][6 + m] = targetL[l][m]
         target = np.array([targetL[0]])
         for i in range(len(targetL)):
             target = np.append(target, np.array([np.hstack((targetL[i][0:9], targetR[i][9:15]))]), axis=0)
