@@ -114,7 +114,8 @@ def solution():
 
         for l in range(len(targetL)):
             for m in range(3, 9):
-                if (sim.jointRotationAxis[sim.jointList[m]] @ np.array([0, 0, 1]) == 1) or sim.jointRotationAxis[sim.jointList[m]] @ np.array([1, 0, 0]) == 1:
+                if (sim.jointRotationAxis[sim.jointList[m]] @ np.array([0, 0, 1]) == 1) or sim.jointRotationAxis[
+                    sim.jointList[m]] @ np.array([1, 0, 0]) == 1:
                     targetR[l][6 + m] = -1 * targetL[l][m]
                 else:
                     targetR[l][6 + m] = targetL[l][m]
@@ -156,7 +157,36 @@ def solution():
         print("target reached=", k, "position=", sim.getJointPosition('RARM_JOINT5'), "orientation=",
               sim.getJointOrientation('RARM_JOINT5'))
 
-    pass
+    # targetChest = sim.inverseKinematics('CHEST_JOINT0', sim.getJointPosition('CHEST_JOINT0'), [1, 1, 0], 10, 1,
+    #                                    threshold)
+    q = np.array([])
+    for joint in sim.jointList:
+        q = np.append(q, np.array([sim.getJointPos(joint)]), axis=0)
+    targetChest = np.insert(q[1:15], 0, np.deg2rad(55))
+    # targetChest[0] = np.deg2rad(45)
+
+    for idi, i in enumerate(sim.jointList):
+        sim.target_pos[i] = targetChest[idi]
+        sim.target_vel[i] = 0.05
+
+        # print(q)
+    counter = 0
+    while np.amax(np.absolute(q - targetChest)) > threshold:
+        # while np.linalg.norm(
+        #        sim.efForwardKinematics('RARM_JOINT5', q)[0] - sim.efForwardKinematics('RARM_JOINT5', j)[
+        #            0]) > threshold:
+        sim.tick()
+        time.sleep(1 / 1000)
+        q = np.array([])
+        for joint in sim.jointList:
+            q = np.append(q, np.array([sim.getJointPos(joint)]), axis=0)
+            # print(q)
+        counter += 1
+        if counter >= 2000:
+            print("____NOT REACHED_____", "position=", sim.getJointPosition('RARM_JOINT5'))
+            print(list(sim.target_pos.values()) - q)
+
+            break
 
 
 tableId, cubeId, targetId = getReadyForTask()

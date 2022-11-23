@@ -1,5 +1,6 @@
 from dis import dis
 # from typing import final
+import scipy.spatial
 from scipy.spatial.transform import Rotation as npRotation
 from scipy.special import comb
 from scipy.interpolate import CubicSpline
@@ -433,7 +434,8 @@ class Simulation(Simulation_base):
 
         # print("initorientation=", initOrientation @ [1, 0, 0])
         intermediate_targets = np.linspace(starting_EFpos, targetPosition, interpolationSteps)
-        intermediate_orientations = np.linspace(initOrientation @ [1, 0, 0], orientation, interpolationSteps)
+        #intermediate_orientations = np.linspace(initOrientation @ [1, 0, 0], orientation, interpolationSteps)
+        intermediate_orientations = scipy.spatial.geometric_slerp(initOrientation @ [1, 0, 0], orientation, np.linspace(0, 1, interpolationSteps))
 
         q = np.array([])
         tmats = self.getTransformationMatrices()
