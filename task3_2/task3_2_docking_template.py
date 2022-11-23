@@ -46,74 +46,85 @@ robotConfigs = {
 
 sim = Simulation(pybulletConfigs, robotConfigs)
 
+
 ##### Please leave this function unchanged, feel free to modify others #####
 def getReadyForTask():
     global finalTargetPos
     global taleId, cubeId, targetId, obstacle
-    finalTargetPos = np.array([0.35,0.38,1.0])
+    finalTargetPos = np.array([0.35, 0.38, 1.0])
     # compile target urdf
     urdf_compiler_path = core_path + "/urdf_compiler.py"
     subprocess.call([urdf_compiler_path,
-                     "-o", abs_path+"/lib/task_urdfs/task3_2_target_compiled.urdf",
-                     abs_path+"/lib/task_urdfs/task3_2_target.urdf"])
+                     "-o", abs_path + "/lib/task_urdfs/task3_2_target_compiled.urdf",
+                     abs_path + "/lib/task_urdfs/task3_2_target.urdf"])
 
     sim.p.resetJointState(bodyUniqueId=1, jointIndex=12, targetValue=-0.4)
     sim.p.resetJointState(bodyUniqueId=1, jointIndex=6, targetValue=-0.4)
 
     # load the table in front of the robot
     tableId = sim.p.loadURDF(
-        fileName              = abs_path+"/lib/task_urdfs/table/table_taller.urdf",
-        basePosition          = [0.8, 0, 0],             
-        baseOrientation       = sim.p.getQuaternionFromEuler([0,0,math.pi/2]),                                  
-        useFixedBase          = True,             
-        globalScaling         = 1.4
+        fileName=abs_path + "/lib/task_urdfs/table/table_taller.urdf",
+        basePosition=[0.8, 0, 0],
+        baseOrientation=sim.p.getQuaternionFromEuler([0, 0, math.pi / 2]),
+        useFixedBase=True,
+        globalScaling=1.4
     )
     cubeId = sim.p.loadURDF(
-        fileName              = abs_path+"/lib/task_urdfs/cubes/task3_2_dumb_bell.urdf", 
-        basePosition          = [0.5, 0, 1.1],            
-        baseOrientation       = sim.p.getQuaternionFromEuler([0,0,0]),                                  
-        useFixedBase          = False,             
-        globalScaling         = 1.4
+        fileName=abs_path + "/lib/task_urdfs/cubes/task3_2_dumb_bell.urdf",
+        basePosition=[0.5, 0, 1.1],
+        baseOrientation=sim.p.getQuaternionFromEuler([0, 0, 0]),
+        useFixedBase=False,
+        globalScaling=1.4
     )
-    sim.p.resetVisualShapeData(cubeId, -1, rgbaColor=[1,1,0,1])
-    
+    sim.p.resetVisualShapeData(cubeId, -1, rgbaColor=[1, 1, 0, 1])
+
     targetId = sim.p.loadURDF(
-        fileName              = abs_path+"/lib/task_urdfs/task3_2_target_compiled.urdf",
-        basePosition          = finalTargetPos,             
-        baseOrientation       = sim.p.getQuaternionFromEuler([0,0,math.pi/4]), 
-        useFixedBase          = True,             
-        globalScaling         = 1
+        fileName=abs_path + "/lib/task_urdfs/task3_2_target_compiled.urdf",
+        basePosition=finalTargetPos,
+        baseOrientation=sim.p.getQuaternionFromEuler([0, 0, math.pi / 4]),
+        useFixedBase=True,
+        globalScaling=1
     )
     obstacle = sim.p.loadURDF(
-        fileName              = abs_path+"/lib/task_urdfs/cubes/task3_2_obstacle.urdf",
-        basePosition          = [0.43,0.275,0.9],             
-        baseOrientation       = sim.p.getQuaternionFromEuler([0,0,math.pi/4]), 
-        useFixedBase          = True,             
-        globalScaling         = 1
+        fileName=abs_path + "/lib/task_urdfs/cubes/task3_2_obstacle.urdf",
+        basePosition=[0.43, 0.275, 0.9],
+        baseOrientation=sim.p.getQuaternionFromEuler([0, 0, math.pi / 4]),
+        useFixedBase=True,
+        globalScaling=1
     )
 
     for _ in range(300):
         sim.tick()
-        time.sleep(1./1000)
+        time.sleep(1. / 1000)
 
     return tableId, cubeId, targetId
 
 
 def solution():
     # TODO: Add your code here
-    goals = [[0.4, -0.1, 0.10],[0.4, -0.1, 0.5],[0.2, 0.3, 0.5]]
-    threshold = 0.2
-    goalOrient = [0, 1, 0] 
+    goals = [[0.45, 0.10, 0.25], [0.45, 0.10, 0.25], [0.4, 0.10, 0.30]]
+    threshold = 0.1
+    goalOrient = [0, -1, 0]
     for k in goals:
-        targetL = sim.inverseKinematics('RARM_JOINT5', k, goalOrient
-                                       , 10, 100, 1e-3)
-        k[1] += 0.2
-        targetR = sim.inverseKinematics('LARM_JOINT5', k, [0,-1,0]
-                                       , 10, 100, 1e-3)
-            
+        targetL = sim.inverseKinematics('LHAND', k, goalOrient
+                                        , 10, 1, 1e-3)
+        k[1] -= 0.2
+        #targetR = sim.inverseKinematics('RHAND', k, [0, 1, 0]
+        #                                , 10, 1, 1e-3)
+        targetR = []
+        for l in range(len(targetL)):
+            for m in range(15):
+                if (sim.jointRotationAxis[sim.jointList[m]] == np.array([0, 0, 1])).all():
+                    targetR[l][m] = -1 * targetL[l][m]
+                else:
+                    targetR[l][m] = targetL[l][m]
+        target = np.array([targetL[0]])
         for i in range(len(targetL)):
-            target = targetL[3:9] + targetR[9:15]
-        print("target= ", k)
+            target = np.append(target, np.array([np.hstack((targetL[i][0:9], targetR[i][9:15]))]), axis=0)
+            # target = list(targetL[i][0:9])+list(targetR[i][9:15])
+        # target = sim.inverseKinematics('RHAND', k, goalOrient
+        #                                , 10, 1, 1e-3)
+        print("_________target= ", k)
         for j in target:
             print("subtarget= ", sim.efForwardKinematics('RARM_JOINT5', j)[0])
             for idi, i in enumerate(sim.jointList):
@@ -121,7 +132,6 @@ def solution():
                 sim.target_vel[i] = 0.05
             q = np.array([])
             for joint in sim.jointList:
-
                 q = np.append(q, np.array([sim.getJointPos(joint)]), axis=0)
                 # print(q)
             counter = 0
@@ -130,7 +140,7 @@ def solution():
                 #        sim.efForwardKinematics('RARM_JOINT5', q)[0] - sim.efForwardKinematics('RARM_JOINT5', j)[
                 #            0]) > threshold:
                 sim.tick()
-                time.sleep(1. / 1000)
+                time.sleep(1 / 1000)
                 q = np.array([])
                 for joint in sim.jointList:
                     q = np.append(q, np.array([sim.getJointPos(joint)]), axis=0)
@@ -138,7 +148,7 @@ def solution():
                 counter += 1
                 if counter >= 2000:
                     print("____NOT REACHED_____", "position=", sim.getJointPosition('RARM_JOINT5'))
-                    print(list(sim.target_pos.values())-q)
+                    print(list(sim.target_pos.values()) - q)
 
                     break
             print("subtarget reached=", sim.getJointPosition('RARM_JOINT5'), "orientation=",
@@ -146,8 +156,8 @@ def solution():
         print("target reached=", k, "position=", sim.getJointPosition('RARM_JOINT5'), "orientation=",
               sim.getJointOrientation('RARM_JOINT5'))
 
-
     pass
+
 
 tableId, cubeId, targetId = getReadyForTask()
 solution()

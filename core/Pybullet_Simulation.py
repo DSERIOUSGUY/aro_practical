@@ -290,7 +290,7 @@ class Simulation(Simulation_base):
         orient = 0
 
         joint_class = ""
-        aeff = self.getJointOrientation(endEffector)
+        aeff = self.getJointLocationAndOrientation(endEffector)[1]@[1, 0, 0]
 
         end_pos, orient = self.getJointLocationAndOrientation(endEffector, q)
         col = np.array([np.cross(self.jointRotationAxis['CHEST_JOINT0'], end_pos - pos)])
@@ -403,7 +403,7 @@ class Simulation(Simulation_base):
 
     # Task 1.2 Inverse Kinematics
 
-    def inverseKinematics(self, endEffector, targetPosition, orientation, interpolationSteps, maxIterPerStep,
+    def inverseKinematics(self, Effector, targetPosition, orientation, interpolationSteps, maxIterPerStep,
                           threshold):
         """Your IK solver \\
         Arguments: \\
@@ -422,8 +422,13 @@ class Simulation(Simulation_base):
         # positions for all joints after performing inverse kinematics.
 
         # inits
+        if Effector == 'LHAND':
+            endEffector = 'LARM_JOINT5'
+        elif Effector == 'RHAND':
+            endEffector = 'RARM_JOINT5'
+        else:
+            endEffector = Effector
 
-    
         starting_EFpos, initOrientation = self.getJointLocationAndOrientation(endEffector)
 
         # print("initorientation=", initOrientation @ [1, 0, 0])
@@ -444,6 +449,9 @@ class Simulation(Simulation_base):
                 q = np.append(q, np.array([self.getJointPos(i)]), axis=0)
 
         trajectory = np.array([q])  # should contain the current configuration angles
+
+
+
         # need to get matrix of thetas for reaching the final position
 
         for i in range(interpolationSteps):
@@ -456,11 +464,15 @@ class Simulation(Simulation_base):
             curr_target_orientation = intermediate_orientations[i, :]
             for iteration in range(maxIterPerStep):
                 dy = curr_target - self.efForwardKinematics(endEffector, q)[0]
-                dtheta = (curr_target_orientation - (self.getJointLocationAndOrientation(endEffector, q)[1] @ [1, 0, 0]))
+                dtheta = (curr_target_orientation - (
+                            self.getJointLocationAndOrientation(endEffector, q)[1] @ [1, 0, 0]))
                 dy = np.hstack((dy, dtheta))
                 # EFpos, EForient = self.getJointLocationAndOrientation(endEffector, q)
                 # dy = curr_target - self.getJointPosition(endEffector)
                 J = self.jacobianMatrix(endEffector, q)
+                if (Effector == 'RHAND') or (
+                        Effector == 'LHAND'):
+                    J[:, 0] = np.zeros(6)
                 dq = np.matmul(np.linalg.pinv(J), dy)
                 q = q + dq
                 # trajectory = np.append(trajectory, np.array([q]), axis=0)
@@ -490,7 +502,7 @@ class Simulation(Simulation_base):
 
         return trajectory
 
-    def move_without_PD(self, endEffector, targetPosition, speed=0.01, orientation=None,
+    def move_without_PD(self, Effector, targetPosition, speed=0.01, orientation=None,
                         threshold=1e-3, maxIter=3000, debug=False, verbose=False):
         """
         Move joints using Inverse Kinematics solver (without using PD control).
@@ -501,9 +513,14 @@ class Simulation(Simulation_base):
         # TODO add your code here
         # iterate through joints and update joint states based on IK solver
 
-        # temp hotfix
+        if Effector == 'LHAND':
+            endEffector = 'LARM_JOINT5'
+        elif Effector == 'RHAND':
+            endEffector = 'RARM_JOINT5'
+        else:
+            endEffector = Effector
         targetPosition[2] -= 0.85
-        trajectory = self.inverseKinematics(endEffector, targetPosition, orientation, 10, maxIter, threshold)
+        trajectory = self.inverseKinematics(Effector, targetPosition, orientation, 10, maxIter, threshold)
         pltDistance = []
         pltTime = []
         initTime = time.time()

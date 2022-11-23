@@ -25,7 +25,6 @@ try:
 except:
     gui = True
 
-
 ### You may want to change the code since here
 pybulletConfigs = {
     "simulation": bullet_simulation,
@@ -52,7 +51,6 @@ robotConfigs = {
 verbose = False
 debugLine = True
 
-
 # TODO: Add your code here to start simulation
 
 ref = [0, 0, 1]
@@ -62,11 +60,10 @@ sim = Simulation(pybulletConfigs, robotConfigs, refVect=ref)
 # position assumes your world frame is located at the base. If your world
 # frame is located at the waist, you will need to transform this vector using
 # the base_to_waist translation.
-# endEffector = "LARM_JOINT5"
-# targetPosition = np.array([0.37, 0.23, 1.06385])  # x,y,z coordinates in world frame
-endEffector = "LARM_JOINT5"
-targetPosition = np.array([0.37, 0.23, 1.06385])  # x,y,z coordinates in world frame
-
+endEffector = "RHAND"
+targetPosition = np.array([0.4, -0.1, 0.3])  # x,y,z coordinates in world frame
+#endEffector = "LHAND"
+#targetPosition = np.array(sim.getJointPosition('LARM_JOINT5'))  # x,y,z coordinates in world frame
 
 # #test code
 # tmats = sim.getTransformationMatrices()
@@ -75,8 +72,8 @@ targetPosition = np.array([0.37, 0.23, 1.06385])  # x,y,z coordinates in world f
 # exit()
 
 # Example code. Feel free to modify
-pltTime, pltEFPosition = sim.move_without_PD(endEffector, targetPosition, speed=0.01, orientation=None, threshold=1e-3, maxIter=3000, debug=False, verbose=False)
-
+pltTime, pltEFPosition = sim.move_without_PD(endEffector, targetPosition, speed=0.01, orientation=[0, 1, 0],
+                                             threshold=1e-2, maxIter=3000, debug=False, verbose=False)
 
 # Now plot some graphs
 task1_figure_name = "task1_kinematics.png"
@@ -85,7 +82,7 @@ task1_savefig = True
 
 fig = plt.figure(figsize=(6, 4))
 
-plt.plot(pltTime, pltEFPosition, color='blue',marker="x")
+plt.plot(pltTime, pltEFPosition, color='blue', marker="x")
 plt.xlabel("Time s")
 plt.ylabel("Distance to target position")
 
