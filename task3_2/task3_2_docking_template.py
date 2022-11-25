@@ -180,13 +180,13 @@ def solution():
     # curr_arm_pos[2] = 0.18
 
     goals = [[0.30482338, 0.35085965, 0.23],[0.1, 0.35, 0.23]]
-    goalOrient = [[0.54114996, 0.79068419, 0.28631317]]
+    goalOrient = [[0.54114996, 0.79068419, 0.28631317],[0, 1, 0]]
     separation = [0,0.5]
 
     #only height decreases
     
  
-    for k in range(len(goals)):
+    for k in range(2):
         target = move_arms_identical(goals[k],goalOrient[k],separation[k])
         print("_________target= ", k)
         move_with_q(target,threshold[k],0)
