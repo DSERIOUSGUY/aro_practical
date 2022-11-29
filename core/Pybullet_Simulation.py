@@ -10,6 +10,7 @@ import math
 import re
 import time
 import yaml
+import log
 
 from Pybullet_Simulation_base import Simulation_base
 
@@ -522,11 +523,12 @@ class Simulation(Simulation_base):
         else:
             endEffector = Effector
         targetPosition[2] -= 0.85
-        trajectory = self.inverseKinematics(Effector, targetPosition, orientation, 10, maxIter, threshold)
+        trajectory = self.inverseKinematics(Effector, targetPosition, orientation, 200, maxIter, threshold)
         pltDistance = []
         pltTime = []
         initTime = time.time()
         for i in trajectory:
+            log.log(self)
             for idj, j in enumerate(self.jointList):
                 self.p.resetJointState(
                     self.robot, self.jointIds[j], i[idj])
