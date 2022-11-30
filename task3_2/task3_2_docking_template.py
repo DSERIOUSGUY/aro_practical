@@ -130,10 +130,9 @@ def move_with_q(target,threshold,vel):
                 sim.getJointOrientation('RARM_JOINT5'))
 
 
-def move_arms_identical(k,goalOrient,separation=0.2):
+def move_arms_identical(k,goalOrient):
     targetL = sim.inverseKinematics('LHAND', k, goalOrient
                                     , 10, 1, 1e-3)
-    k[1] -= separation
     targetR = targetL
 
     for l in range(len(targetL)):
@@ -186,7 +185,7 @@ def solution():
     
  
     for k in range(2):
-        target = move_arms_identical(goals[k],goalOrient[k],separation[k])
+        target = move_arms_identical(goals[k],goalOrient[k])
         print("_________target= ", k)
         move_with_q(target,threshold[k],0)
         print("target reached=", k, "position=", sim.getJointPosition('RARM_JOINT5'), "orientation=",
