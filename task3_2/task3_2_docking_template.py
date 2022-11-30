@@ -134,8 +134,7 @@ def move_arms_identical(k,goalOrient,separation=0.2):
     targetL = sim.inverseKinematics('LHAND', k, goalOrient
                                     , 10, 1, 1e-3)
     k[1] -= separation
-    targetR = sim.inverseKinematics('RHAND', k, [0, 1, 0]
-                                    , 10, 1, 1e-3)
+    targetR = targetL
 
     for l in range(len(targetL)):
         for m in range(3, 9):
