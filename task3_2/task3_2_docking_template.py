@@ -181,4 +181,4 @@ def solution():
 
 tableId, cubeId, targetId = getReadyForTask()
 solution()
-time.sleep(5)
+
