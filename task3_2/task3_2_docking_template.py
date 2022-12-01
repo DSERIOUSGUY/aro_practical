@@ -121,8 +121,7 @@ def move_with_q(target,threshold,vel):
             if counter >= 2000:
                 #if not reached, continue to next target
                 break
-        print("subtarget reached=", sim.getJointPosition('RARM_JOINT5'), "orientation=",
-                sim.getJointOrientation('RARM_JOINT5'))
+
 
 
 def move_arms_identical(k,goalOrient):
@@ -166,8 +165,9 @@ def solution():
     move_with_q([targetChest],0.1,0.05)
 
     #move arms down
-    goals = [[0.30482338, 0.35085965, 0.23]]
-    goalOrient = [[0.54114996, 0.79068419, 0.28631317]]
+    goals = [[0.30482338, 0.35085965, 0.23],[0.1, 0.35, 0.23]]
+    goalOrient = [[0.54114996, 0.79068419, 0.28631317],[0, 1, 0]]
+
 
     #only height decreases
     for k in range(2):
@@ -176,8 +176,6 @@ def solution():
 
 
     print("***FINISHED***")
-
-    #allows to check if the solution is stable
     for i in range(10):
         sim.tick()
 
