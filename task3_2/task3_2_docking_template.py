@@ -101,6 +101,8 @@ def getReadyForTask():
 
 
 def move_with_q(target,threshold,vel):
+    #for a given target configuration, threshold and joint velocities, move the 
+    #robot to achieve the same
     for j in target:
         for idi, i in enumerate(sim.jointList):
             sim.target_pos[i] = j[idi]
@@ -108,29 +110,23 @@ def move_with_q(target,threshold,vel):
         q = np.array([])
         for joint in sim.jointList:
             q = np.append(q, np.array([sim.getJointPos(joint)]), axis=0)
-            # print(q)
         counter = 0
         while np.amax(np.absolute(q - j)) > threshold:
-            # while np.linalg.norm(
-            #        sim.efForwardKinematics('RARM_JOINT5', q)[0] - sim.efForwardKinematics('RARM_JOINT5', j)[
-            #            0]) > threshold:
             sim.tick()
             time.sleep(1 / 1000)
             q = np.array([])
             for joint in sim.jointList:
                 q = np.append(q, np.array([sim.getJointPos(joint)]), axis=0)
-                # print(q)
             counter += 1
             if counter >= 2000:
-                print("____NOT REACHED_____", "position=", sim.getJointPosition('RARM_JOINT5'))
-                print(list(sim.target_pos.values()) - q)
-
+                #if not reached, continue to next target
                 break
         print("subtarget reached=", sim.getJointPosition('RARM_JOINT5'), "orientation=",
                 sim.getJointOrientation('RARM_JOINT5'))
 
 
 def move_arms_identical(k,goalOrient):
+    #move arms identically
     targetL = sim.inverseKinematics('LHAND', k, goalOrient
                                     , 10, 1, 1e-3)
     targetR = targetL
@@ -150,8 +146,6 @@ def move_arms_identical(k,goalOrient):
 
 
 def solution():
-    # TODO: Add your code here
-
 
     #move arms up
     goals = [[0.40, 0.30, 0.25], [0.50, 0.07, 0.22], [0.45, 0.07, 0.40]]
@@ -159,10 +153,8 @@ def solution():
     goalOrient = [[0, 0, 1],[1, 0, 0],[1, 0, 0],[0, 1, 0]]
     for k in range(len(goals)):
         target = move_arms_identical(goals[k],goalOrient[k])
-        print("_________target= ", k)
         move_with_q(target,threshold[k],0)
-        print("target reached=", k, "position=", sim.getJointPosition('RARM_JOINT5'), "orientation=",
-        sim.getJointOrientation('RARM_JOINT5'))
+
         
 
     #rotate chest
@@ -174,25 +166,18 @@ def solution():
     move_with_q([targetChest],0.1,0.05)
 
     #move arms down
-    # curr_arm_pos = sim.getJointPosition('LARM_JOINT5')
-    # curr_arm_pos[2] = 0.18
-
-    goals = [[0.30482338, 0.35085965, 0.23],[0.1, 0.35, 0.23]]
-    goalOrient = [[0.54114996, 0.79068419, 0.28631317],[0, 1, 0]]
-    separation = [0,0.5]
+    goals = [[0.30482338, 0.35085965, 0.23]]
+    goalOrient = [[0.54114996, 0.79068419, 0.28631317]]
 
     #only height decreases
-    
- 
     for k in range(2):
         target = move_arms_identical(goals[k],goalOrient[k])
-        print("_________target= ", k)
         move_with_q(target,threshold[k],0)
-        print("target reached=", k, "position=", sim.getJointPosition('RARM_JOINT5'), "orientation=",
-        sim.getJointOrientation('RARM_JOINT5'))
 
 
     print("***FINISHED***")
+
+    #allows to check if the solution is stable
     for i in range(10):
         sim.tick()
 
