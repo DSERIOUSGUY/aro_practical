@@ -105,8 +105,6 @@ class Simulation(Simulation_base):
 
             # NOTE: ALL MATRICES ARE WRITTEN IN TRANSPOSE FROM WHAT IS GIVEN IN THE SLIDE 25 of Coordinate_transforms.pdf
 
-            # print("got axis:",axis)
-
             # z-axis
             if np.array_equal(axis, np.array([0, 0, 1])):
                 return np.matrix([
@@ -133,7 +131,6 @@ class Simulation(Simulation_base):
                 ])
 
             else:
-                # print("returning no rot")
                 return np.matrix([
                     [0, 0, 0],
                     [0, 0, 0],
