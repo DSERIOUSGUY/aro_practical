@@ -175,10 +175,12 @@ def solution():
         move_with_q(target,threshold[k],0)
 
 
-    print("***FINISHED***")
-    for i in range(10):
-        sim.tick()
+
 
 tableId, cubeId, targetId = getReadyForTask()
 solution()
-
+#wait to check solution stability
+for i in range(10):
+    sim.tick()
+#wait to observe result
+time.sleep(5)
