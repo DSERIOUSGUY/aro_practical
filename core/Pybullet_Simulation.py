@@ -1,15 +1,8 @@
-from dis import dis
-# from typing import final
+
 import scipy.spatial
-from scipy.spatial.transform import Rotation as npRotation
-from scipy.special import comb
-from scipy.interpolate import CubicSpline
-import matplotlib.pyplot as plt
 import numpy as np
 import math
-import re
 import time
-import yaml
 
 from Pybullet_Simulation_base import Simulation_base
 
@@ -103,7 +96,7 @@ class Simulation(Simulation_base):
             except Exception as e:
                 print("ERROR:", e, "|", jointName)
 
-            # NOTE: ALL MATRICES ARE WRITTEN IN TRANSPOSE FROM WHAT IS GIVEN IN THE SLIDE 25 of Coordinate_transforms.pdf
+
 
             # z-axis
             if np.array_equal(axis, np.array([0, 0, 1])):
@@ -248,15 +241,7 @@ class Simulation(Simulation_base):
         """Get the orientation of a joint in the world frame, leave this unchanged please."""
         return np.array(self.getJointLocationAndOrientation(jointName)[1] @ self.jointRotationAxis[jointName]).squeeze()
 
-    # compute the geometric Jacobian
-    # def geomJacobian(jnt2pos, jnt3pos, endEffPos,ai):
 
-    #     endEffPos3d = np.pad(endEffPos,(0, 1), 'constant') #append a 0 on z
-    #     col0 = endEffPos3d
-    #     col1 = endEffPos3d - np.array(jnt2pos + [0])
-    #     col2 = endEffPos3d - np.array(jnt3pos + [0])
-    #     J = np.array([np.cross(ai,col0), np.cross(ai,col1), np.cross(ai,col2)]).T 
-    #     return J
 
     """
     Calculate the Jacobian Matrix for the Nextage Robot.
@@ -428,6 +413,7 @@ class Simulation(Simulation_base):
                 dy = np.hstack((dy, dtheta))
 
                 J = self.jacobianMatrix(endEffector, q) #get Jacobian
+                # if end-effector is set to L or RHAND then exclude the chest from the kinematic chain
                 if (Effector == 'RHAND') or (
                         Effector == 'LHAND'):
                     J[:, 0] = np.zeros(6)
