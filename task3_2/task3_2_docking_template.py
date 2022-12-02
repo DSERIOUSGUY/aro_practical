@@ -145,11 +145,11 @@ def moveArmsIdentical(k, goalOrient):
 
 def solution():
     # move arms up
-    goals = [[0.40, 0.30, 0.25], [0.50, 0.07, 0.22], [0.45, 0.07, 0.40]]
+    goal_positions = [[0.40, 0.30, 0.25], [0.50, 0.07, 0.22], [0.45, 0.07, 0.40]]
     threshold = [0.2, 0.1, 0.1, 0.1]
-    goalOrient = [[0, 0, 1], [1, 0, 0], [1, 0, 0], [0, 1, 0]]
-    for k in range(len(goals)):
-        target = moveArmsIdentical(goals[k], goalOrient[k])
+    goal_orients = [[0, 0, 1], [1, 0, 0], [1, 0, 0], [0, 1, 0]]
+    for k in range(len(goal_positions)):
+        target = moveArmsIdentical(goal_positions[k], goal_orients[k])
         MoveWithQ(target, threshold[k], 0)
 
     # rotate chest
@@ -161,12 +161,12 @@ def solution():
     MoveWithQ([targetChest], 0.1, 0.05)
 
     # move arms down
-    goals = [[0.30482338, 0.35085965, 0.23], [0.1, 0.35, 0.23]]
-    goalOrient = [[0.54114996, 0.79068419, 0.28631317], [0, 1, 0]]
+    goal_positions = [[0.30482338, 0.35085965, 0.23], [0.1, 0.35, 0.23]]
+    goal_orients = [[0.54114996, 0.79068419, 0.28631317], [0, 1, 0]]
 
     # only height decreases
     for k in range(2):
-        target = moveArmsIdentical(goals[k], goalOrient[k])
+        target = moveArmsIdentical(goal_positions[k], goal_orients[k])
         MoveWithQ(target, threshold[k], 0)
 
 

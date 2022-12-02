@@ -91,11 +91,11 @@ def getReadyForTask():
 
 
 def solution():
-    #manually specified goals
-    goals = [[0.4, -0.1, 0.15], [0.2, -0.10, 0.15], [0.2, 0.02, 0.15], [0.2, 0.0, 0.15], [0.4, 0.0, 0.09], [0.60, 0.0, 0.09]]
+    #manually specified goal_positions
+    goal_positions = [[0.4, -0.1, 0.15], [0.2, -0.10, 0.15], [0.2, 0.02, 0.15], [0.2, 0.0, 0.15], [0.4, 0.0, 0.09], [0.60, 0.0, 0.09]]
     threshold = 0.1
     goalOrient = [1, 0, 0] 
-    for k in goals:
+    for k in goal_positions:
         #compute subtargets/trajectory for reaching the current goal
         target = sim.inverseKinematics('RARM_JOINT5', k, goalOrient
                                        , 10, 100, 1e-3)
