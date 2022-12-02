@@ -21,7 +21,7 @@ class Simulation(Simulation_base):
         else:
             self.refVector = np.array([1, 0, 0])
         for idi, i in enumerate(self.jointList):
-            self.target_pos[i] = 0
+            self.target_angles[i] = 0
             self.target_vel[i] = 0
 
     ########## Task 1: Kinematics ##########
@@ -494,8 +494,8 @@ class Simulation(Simulation_base):
         return pltTime, pltTarget, pltTorque, pltTorqueTime, pltPosition, pltVelocity
 
     # variables to contain persistent values between iterations of tick
-    prev_joint_pos = {}
-    target_pos = {}
+    prev_joint_angles = {}
+    target_angles = {}
     target_vel = {}
 
     def tick(self):
@@ -515,16 +515,16 @@ class Simulation(Simulation_base):
             ki = self.ctrlConfig[jointController]['pid']['i']
             kd = self.ctrlConfig[jointController]['pid']['d']
 
-            x_ref = self.target_pos[joint]  # target pos
+            x_ref = self.target_angles[joint]  # target pos
             dx_ref = self.target_vel[joint]  # target vel
             x_real = self.getJointPos(joint)  # current pos
 
-            if not (joint in self.prev_joint_pos.keys()):
+            if not (joint in self.prev_joint_angles.keys()):
                 # if joint not encountered previously, make an entry for it
-                self.prev_joint_pos[joint] = x_real
+                self.prev_joint_angles[joint] = x_real
 
-            dx_real = (x_real - self.prev_joint_pos[joint]) / self.dt  # current speed
-            self.prev_joint_pos[joint] = x_real
+            dx_real = (x_real - self.prev_joint_angles[joint]) / self.dt  # current speed
+            self.prev_joint_angles[joint] = x_real
 
             torque = self.calculateTorque(x_ref, x_real, dx_ref, dx_real, 0, kp, ki, kd)
 

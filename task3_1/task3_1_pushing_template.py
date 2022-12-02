@@ -102,7 +102,7 @@ def solution():
         for j in target:
             #for each tick, specify subtarget and joint velocities
             for idi, i in enumerate(sim.jointList):
-                sim.target_pos[i] = j[idi]
+                sim.target_angles[i] = j[idi]
                 sim.target_vel[i] = 0.05
             q = np.array([])
             for joint in sim.jointList:
