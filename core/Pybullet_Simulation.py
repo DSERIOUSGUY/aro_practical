@@ -420,7 +420,7 @@ class Simulation(Simulation_base):
         for i in range(interpolationSteps):
 
             curr_target = intermediate_targets[i, :]
-            curr_target_orientation = intermediate_orientations[i, :]
+            curr_target_orientation = intermediate_orientations[i]
             for iteration in range(maxIterPerStep):
                 dy = curr_target - self.efForwardKinematics(endEffector, q)[0]
                 dtheta = (curr_target_orientation - (
