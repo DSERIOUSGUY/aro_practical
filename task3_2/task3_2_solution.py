@@ -176,4 +176,5 @@ solution()
 for i in range(10):
     sim.tick()
 # wait to observe result
+print("target reached")
 time.sleep(5)
