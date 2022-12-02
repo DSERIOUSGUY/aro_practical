@@ -100,7 +100,7 @@ def getReadyForTask():
     return tableId, cubeId, targetId
 
 
-def move_with_q(target, threshold, vel):
+def MoveWithQ(target, threshold, vel):
     # for a given target configuration, threshold and joint velocities, move the
     # robot to achieve the same
     for j in target:
@@ -123,7 +123,7 @@ def move_with_q(target, threshold, vel):
                 break
 
 
-def move_arms_identical(k, goalOrient):
+def moveArmsIdentical(k, goalOrient):
     # move arms identically
     targetL = sim.inverseKinematics('LHAND', k, goalOrient
                                     , 10, 1, 1e-3)
@@ -149,8 +149,8 @@ def solution():
     threshold = [0.2, 0.1, 0.1, 0.1]
     goalOrient = [[0, 0, 1], [1, 0, 0], [1, 0, 0], [0, 1, 0]]
     for k in range(len(goals)):
-        target = move_arms_identical(goals[k], goalOrient[k])
-        move_with_q(target, threshold[k], 0)
+        target = moveArmsIdentical(goals[k], goalOrient[k])
+        MoveWithQ(target, threshold[k], 0)
 
     # rotate chest
     q = np.array([])
@@ -158,7 +158,7 @@ def solution():
         q = np.append(q, np.array([sim.getJointPos(joint)]), axis=0)
     targetChest = np.insert(q[1:15], 0, np.deg2rad(55))
 
-    move_with_q([targetChest], 0.1, 0.05)
+    MoveWithQ([targetChest], 0.1, 0.05)
 
     # move arms down
     goals = [[0.30482338, 0.35085965, 0.23], [0.1, 0.35, 0.23]]
@@ -166,8 +166,8 @@ def solution():
 
     # only height decreases
     for k in range(2):
-        target = move_arms_identical(goals[k], goalOrient[k])
-        move_with_q(target, threshold[k], 0)
+        target = moveArmsIdentical(goals[k], goalOrient[k])
+        MoveWithQ(target, threshold[k], 0)
 
 
 tableId, cubeId, targetId = getReadyForTask()
