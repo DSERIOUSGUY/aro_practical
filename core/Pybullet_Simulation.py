@@ -240,7 +240,7 @@ class Simulation(Simulation_base):
     """
     Calculate the Jacobian Matrix for the Nextage Robot.
     @param endEffector string id of the endEffector e.g. LARM_JOINT5
-    @return 3x15 Jacobian matrix
+    @return 6x15 Jacobian matrix
     """
 
     def jacobianMatrix(self, endEffector, q=None):
