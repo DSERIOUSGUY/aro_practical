@@ -1,4 +1,3 @@
-
 import scipy.spatial
 import numpy as np
 import math
@@ -96,8 +95,6 @@ class Simulation(Simulation_base):
             except Exception as e:
                 print("ERROR:", e, "|", jointName)
 
-
-
             # z-axis
             if np.array_equal(axis, np.array([0, 0, 1])):
                 return np.matrix([
@@ -191,7 +188,7 @@ class Simulation(Simulation_base):
             pass
         elif joint_nr == 'LHAND':
             pass
-        #from transformation matrix, get rotational matrix
+        # from transformation matrix, get rotational matrix
         elif (joint_class == 'CHEST') and (type(joint_nr) == int) and (joint_nr == 0):
             return np.array([tmats[jointName][0, 3],
                              tmats[jointName][1, 3],
@@ -207,16 +204,15 @@ class Simulation(Simulation_base):
                              trans_mat[1, :3],
                              trans_mat[2, :3]])
         elif (type(joint_nr) == int) and (joint_nr > 0):
-            #consider chest movement if needed
+            # consider chest movement if needed
             trans_mat = np.matmul(tmats['CHEST_JOINT0'], tmats[joint_class + "_JOINT0"])
             for i in range(0, joint_nr, 1):
                 name = joint_class + "_JOINT" + str(i)
                 next_name = joint_class + "_JOINT" + str(i + 1)
 
-                #compute transformation matrix for the current joint if it is not
-                #at base(i.e position and orientation is dependent on another joint)
+                # compute transformation matrix for the current joint if it is not
+                # at base(i.e position and orientation is dependent on another joint)
                 trans_mat = np.matmul(trans_mat, tmats[next_name])
-
 
             return np.array([trans_mat[0, 3], trans_mat[1, 3], trans_mat[2, 3]]), \
                    np.array([trans_mat[0, :3],
@@ -241,8 +237,6 @@ class Simulation(Simulation_base):
         """Get the orientation of a joint in the world frame, leave this unchanged please."""
         return np.array(self.getJointLocationAndOrientation(jointName)[1] @ self.jointRotationAxis[jointName]).squeeze()
 
-
-
     """
     Calculate the Jacobian Matrix for the Nextage Robot.
     @param endEffector string id of the endEffector e.g. LARM_JOINT5
@@ -255,7 +249,7 @@ class Simulation(Simulation_base):
         orient = 0
 
         joint_class = ""
-        aeff = self.getJointLocationAndOrientation(endEffector)[1]@[1, 0, 0]
+        aeff = self.getJointLocationAndOrientation(endEffector)[1] @ [1, 0, 0]
 
         end_pos, orient = self.getJointLocationAndOrientation(endEffector, q)
         col = np.array([np.cross(self.jointRotationAxis['CHEST_JOINT0'], end_pos - pos)])
@@ -263,95 +257,29 @@ class Simulation(Simulation_base):
         tmats = self.getTransformationMatrices()
 
         for i in tmats.keys():
-            #identify if the joint needs to be computed for
+            # identify if the joint needs to be computed for
             name = i.split("_")
             joint_class = name[0]
             if endEffector.find(joint_class) != -1:
                 pos, orient = self.getJointLocationAndOrientation(i, q)
 
-                #calculate jacobian for postion and orientation
-                col = np.append(col, np.array([np.cross(self.jointRotationAxis[i], end_pos - pos)]),\
-                     axis=0)
+                # calculate jacobian for postion and orientation
+                col = np.append(col, np.array([np.cross(self.jointRotationAxis[i], end_pos - pos)]), \
+                                axis=0)
                 orientCol = np.append(orientCol, np.array(
                     [np.cross(self.jointRotationAxis[i], aeff)]), axis=0)
 
-            
+
             elif (joint_class == 'base') or (joint_class == 'CHEST') or (joint_class == 'RHAND') or (
                     joint_class == 'LHAND'):
-                    #skip for parts that are not moved in any case
+                # skip for parts that are not moved in any case
                 continue
             else:
                 col = np.append(col, np.zeros((1, 3)), axis=0)
                 orientCol = np.append(orientCol, np.zeros((1, 3)), axis=0)
         return np.vstack((col.T, orientCol.T))
 
-    def efForwardKinematics(self, endEffector, q):
 
-        keys = self.jointRotationAxis.keys()
-        transformationMatrices = {}
-        for index, i in enumerate(self.jointList):
-            name = i.split("_")
-            joint_class = name[0]
-
-            #get rotational matrices for all joints
-            theta = q[index]
-            rmat = self.getJointRotationalMatrix(i, theta)
-
-            #compose transformation matrix using the rotational matrix and positon
-            transformationMatrices[i] = np.array([
-                self.append_to_array(rmat[0], self.frameTranslationFromParent[i][0]),
-                self.append_to_array(rmat[1], self.frameTranslationFromParent[i][1]),
-                self.append_to_array(rmat[2], self.frameTranslationFromParent[i][2]),
-                np.array([0, 0, 0, 1])
-            ])
-
-        name = endEffector.split("_")
-        joint_class = name[0]
-        if joint_class == 'base':
-            joint_nr = name[-1]
-        elif (joint_class == 'RHAND') or (joint_class == 'LHAND'):
-            joint_nr = name[0]
-        else:
-            joint_nr = int(name[-1][-1])
-
-        tmats = transformationMatrices
-
-        if joint_nr == 'base':
-            pass
-        elif joint_nr == 'RHAND':
-            pass
-        elif joint_nr == 'LHAND':
-            pass
-        elif (joint_class == 'CHEST') and (type(joint_nr) == int) and (joint_nr == 0):
-            return np.array([tmats[endEffector][0, 3],
-                             tmats[endEffector][1, 3],
-                             tmats[endEffector][2, 3]]), \
-                   np.array([tmats[endEffector][0, 0:3],
-                             tmats[endEffector][1, 0:3],
-                             tmats[endEffector][2, 0:3]])
-        elif ((joint_class == 'LARM') or (joint_class == 'RARM') or (joint_class == 'HEAD')) and (
-                type(joint_nr) == int) and (joint_nr == 0):
-            trans_mat = np.matmul(tmats['CHEST_JOINT0'], tmats[endEffector])
-            return np.array([trans_mat[0, 3], trans_mat[1, 3], trans_mat[2, 3]]), \
-                   np.array([trans_mat[0, :3],
-                             trans_mat[1, :3],
-                             trans_mat[2, :3]])
-        elif (type(joint_nr) == int) and (joint_nr > 0):
-            prev_name = ""
-            trans_mat = np.matmul(tmats['CHEST_JOINT0'], tmats[joint_class + "_JOINT0"])
-            for i in range(0, joint_nr, 1):
-                name = joint_class + "_JOINT" + str(i)
-                next_name = joint_class + "_JOINT" + str(i + 1)
-
-                trans_mat = np.matmul(trans_mat, tmats[next_name])
-
-            return np.array([trans_mat[0, 3], trans_mat[1, 3], trans_mat[2, 3]]), \
-                   np.array([trans_mat[0, :3],
-                             trans_mat[1, :3],
-                             trans_mat[2, :3]])
-        else:
-            print("ERROR: didn't recognise joint number")
-            return None, None
 
     # Task 1.2 Inverse Kinematics
 
@@ -380,14 +308,15 @@ class Simulation(Simulation_base):
 
         starting_EFpos, initOrientation = self.getJointLocationAndOrientation(endEffector)
 
-        #get trajectory for position and orientation
+        # get trajectory for position and orientation
         intermediate_targets = np.linspace(starting_EFpos, targetPosition, interpolationSteps)
-        intermediate_orientations = scipy.spatial.geometric_slerp(initOrientation @ [1, 0, 0], orientation, np.linspace(0, 1, interpolationSteps))
+        intermediate_orientations = scipy.spatial.geometric_slerp(initOrientation @ [1, 0, 0], orientation,
+                                                                  np.linspace(0, 1, interpolationSteps))
 
         q = np.array([])
         tmats = self.getTransformationMatrices()
-        
-        #build robot configuration vector
+
+        # build robot configuration vector
         for i in tmats.keys():
             name = i.split("_")
             joint_class = name[0]
@@ -398,35 +327,34 @@ class Simulation(Simulation_base):
                 q = np.append(q, np.array([self.getJointPos(i)]), axis=0)
 
         # contains the current configuration angles as starting point
-        trajectory = np.array([q])  
+        trajectory = np.array([q])
 
-        
-        #generate trajectory
+        # generate trajectory
         for i in range(interpolationSteps):
 
             curr_target = intermediate_targets[i, :]
             curr_target_orientation = intermediate_orientations[i]
             for iteration in range(maxIterPerStep):
-                dy = curr_target - self.efForwardKinematics(endEffector, q)[0]
+                dy = curr_target - self.getJointLocationAndOrientation(endEffector, q)[0]
                 dtheta = (curr_target_orientation - (
-                            self.getJointLocationAndOrientation(endEffector, q)[1] @ [1, 0, 0]))
+                        self.getJointLocationAndOrientation(endEffector, q)[1] @ [1, 0, 0]))
                 dy = np.hstack((dy, dtheta))
 
-                J = self.jacobianMatrix(endEffector, q) #get Jacobian
+                J = self.jacobianMatrix(endEffector, q)  # get Jacobian
                 # if end-effector is set to L or RHAND then exclude the chest from the kinematic chain
                 if (Effector == 'RHAND') or (
                         Effector == 'LHAND'):
                     J[:, 0] = np.zeros(6)
-                
-                #get new configuration
+
+                # get new configuration
                 dq = np.matmul(np.linalg.pinv(J), dy)
                 q = q + dq
 
-                #append to trajectory
+                # append to trajectory
                 trajectory = np.append(trajectory, np.array([q]), axis=0)
 
-                #estimate new EF position via forward kinematics
-                EF_position = self.efForwardKinematics(endEffector, q)[0]
+                # estimate new EF position via forward kinematics
+                EF_position = self.getJointLocationAndOrientation(endEffector, q)[0]
                 if np.linalg.norm(EF_position - curr_target) < threshold:
                     break
                 else:
@@ -451,21 +379,21 @@ class Simulation(Simulation_base):
         else:
             endEffector = Effector
 
-        #account for base height
+        # account for base height
         targetPosition[2] -= 0.85
-        #generate trajectory to reach goal
+        # generate trajectory to reach goal
         trajectory = self.inverseKinematics(Effector, targetPosition, orientation, 10, maxIter, threshold)
         pltDistance = []
         pltTime = []
         initTime = time.time()
         for i in trajectory:
-            #for every subtarget, get delta q for all joints
+            # for every subtarget, get delta q for all joints
             for idj, j in enumerate(self.jointList):
                 self.p.resetJointState(
                     self.robot, self.jointIds[j], i[idj])
-    
-            #record the distance from the target and time
-            pltDistance.append(np.linalg.norm(self.efForwardKinematics(endEffector, i)[0] - targetPosition))
+
+            # record the distance from the target and time
+            pltDistance.append(np.linalg.norm(self.getJointLocationAndOrientation(endEffector, i)[0] - targetPosition))
             pltTime.append(time.time() - initTime)
 
         pltDistance = np.array(pltDistance)
@@ -517,10 +445,9 @@ class Simulation(Simulation_base):
             ki = self.ctrlConfig[jointController]['pid']['i']
             kd = self.ctrlConfig[jointController]['pid']['d']
 
-             # Calculate the torque
+            # Calculate the torque
             torque = self.calculateTorque(x_ref, x_real, dx_ref, dx_real, integral, kp, ki, kd)
             pltTorque.append(torque)
-
 
             # send the manipulation signal to the joint
             self.p.setJointMotorControl2(
@@ -539,7 +466,7 @@ class Simulation(Simulation_base):
         self.disableVelocityController(joint)
         # logging for the graph
         pltTime, pltTarget, pltTorque, pltTorqueTime, pltPosition, pltVelocity = [], [], [], [], [], []
-   
+
         joint_pos = self.getJointPos(joint)
         prev_joint_pos = self.getJointPos(joint)
 
@@ -550,8 +477,6 @@ class Simulation(Simulation_base):
         threshold = 0.035
 
         while abs(dist_remaining) > abs(threshold) or abs(joint_vel - targetVelocity) > abs(threshold):
-
-
             toy_tick(targetPosition, joint_pos, targetVelocity, joint_vel, 0)
 
             prev_joint_pos = joint_pos
@@ -568,8 +493,7 @@ class Simulation(Simulation_base):
 
         return pltTime, pltTarget, pltTorque, pltTorqueTime, pltPosition, pltVelocity
 
-    
-    #variables to contain persistent values between iterations of tick
+    # variables to contain persistent values between iterations of tick
     prev_joint_pos = {}
     target_pos = {}
     target_vel = {}
@@ -591,17 +515,17 @@ class Simulation(Simulation_base):
             ki = self.ctrlConfig[jointController]['pid']['i']
             kd = self.ctrlConfig[jointController]['pid']['d']
 
-            x_ref = self.target_pos[joint]  #target pos
-            dx_ref = self.target_vel[joint] #target vel
-            x_real = self.getJointPos(joint) #current pos
-            
+            x_ref = self.target_pos[joint]  # target pos
+            dx_ref = self.target_vel[joint]  # target vel
+            x_real = self.getJointPos(joint)  # current pos
+
             if not (joint in self.prev_joint_pos.keys()):
-                #if joint not encountered previously, make an entry for it
+                # if joint not encountered previously, make an entry for it
                 self.prev_joint_pos[joint] = x_real
 
-            dx_real = (x_real - self.prev_joint_pos[joint]) / self.dt   #current speed
+            dx_real = (x_real - self.prev_joint_pos[joint]) / self.dt  # current speed
             self.prev_joint_pos[joint] = x_real
-            
+
             torque = self.calculateTorque(x_ref, x_real, dx_ref, dx_real, 0, kp, ki, kd)
 
             self.p.setJointMotorControl2(
@@ -627,7 +551,6 @@ class Simulation(Simulation_base):
         time.sleep(self.dt)
 
     ########## Task 3: Robot Manipulation ##########
-    #implemented in template solution() methods
-  
+    # implemented in template solution() methods
 
 ### END
