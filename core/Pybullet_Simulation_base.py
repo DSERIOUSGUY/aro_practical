@@ -489,7 +489,7 @@ class Simulation_base:
 
     def getJointRange(self, jointName):
         """Return the range by given a joint's name"""
-        return self.jointsInfos[jointName]['jointRange']  # TODO: find out this parameter
+        return self.jointsInfos[jointName]['jointRange']  
 
     def getJointRestPos(self, jointName):
         """Return the rest position by given a joint's name"""
