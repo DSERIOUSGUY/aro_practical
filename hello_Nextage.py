@@ -36,10 +36,10 @@ robotConfigs = {
     "colored": True          # Ture | False
 }
 
-sim = Simulation_template(pybulletConfigs, robotConfigs)
+sim = Simulation(pybulletConfigs, robotConfigs)
 print(sim.joints)
 
 try:
     time.sleep(float(sys.argv[1]))
 except:
-    time.sleep(10)
+    time.sleep(100)
