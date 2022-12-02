@@ -100,9 +100,9 @@ def getReadyForTask():
     return tableId, cubeId, targetId
 
 
-def move_with_q(target,threshold,vel):
-    #for a given target configuration, threshold and joint velocities, move the 
-    #robot to achieve the same
+def move_with_q(target, threshold, vel):
+    # for a given target configuration, threshold and joint velocities, move the
+    # robot to achieve the same
     for j in target:
         for idi, i in enumerate(sim.jointList):
             sim.target_pos[i] = j[idi]
@@ -119,13 +119,12 @@ def move_with_q(target,threshold,vel):
                 q = np.append(q, np.array([sim.getJointPos(joint)]), axis=0)
             counter += 1
             if counter >= 2000:
-                #if not reached, continue to next target
+                # if not reached, continue to next target
                 break
 
 
-
-def move_arms_identical(k,goalOrient):
-    #move arms identically
+def move_arms_identical(k, goalOrient):
+    # move arms identically
     targetL = sim.inverseKinematics('LHAND', k, goalOrient
                                     , 10, 1, 1e-3)
     targetR = targetL
@@ -145,42 +144,36 @@ def move_arms_identical(k,goalOrient):
 
 
 def solution():
-
-    #move arms up
+    # move arms up
     goals = [[0.40, 0.30, 0.25], [0.50, 0.07, 0.22], [0.45, 0.07, 0.40]]
-    threshold = [0.2,0.1,0.1,0.1]
-    goalOrient = [[0, 0, 1],[1, 0, 0],[1, 0, 0],[0, 1, 0]]
+    threshold = [0.2, 0.1, 0.1, 0.1]
+    goalOrient = [[0, 0, 1], [1, 0, 0], [1, 0, 0], [0, 1, 0]]
     for k in range(len(goals)):
-        target = move_arms_identical(goals[k],goalOrient[k])
-        move_with_q(target,threshold[k],0)
+        target = move_arms_identical(goals[k], goalOrient[k])
+        move_with_q(target, threshold[k], 0)
 
-        
-
-    #rotate chest
+    # rotate chest
     q = np.array([])
     for joint in sim.jointList:
         q = np.append(q, np.array([sim.getJointPos(joint)]), axis=0)
     targetChest = np.insert(q[1:15], 0, np.deg2rad(55))
 
-    move_with_q([targetChest],0.1,0.05)
+    move_with_q([targetChest], 0.1, 0.05)
 
-    #move arms down
-    goals = [[0.30482338, 0.35085965, 0.23],[0.1, 0.35, 0.23]]
-    goalOrient = [[0.54114996, 0.79068419, 0.28631317],[0, 1, 0]]
+    # move arms down
+    goals = [[0.30482338, 0.35085965, 0.23], [0.1, 0.35, 0.23]]
+    goalOrient = [[0.54114996, 0.79068419, 0.28631317], [0, 1, 0]]
 
-
-    #only height decreases
+    # only height decreases
     for k in range(2):
-        target = move_arms_identical(goals[k],goalOrient[k])
-        move_with_q(target,threshold[k],0)
-
-
+        target = move_arms_identical(goals[k], goalOrient[k])
+        move_with_q(target, threshold[k], 0)
 
 
 tableId, cubeId, targetId = getReadyForTask()
 solution()
-#wait to check solution stability
+# wait to check solution stability
 for i in range(10):
     sim.tick()
-#wait to observe result
+# wait to observe result
 time.sleep(5)
